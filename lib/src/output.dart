@@ -24,7 +24,8 @@ Future<void> pretifyOutput(String info,
 	{
 		String color='', 
 		String filePath,
-		bool clear=false
+		bool clear=false,
+		String endLine,
 	}) async {
 
 	Colorize toPretify = Colorize(info);
@@ -67,7 +68,9 @@ Future<void> pretifyOutput(String info,
 		break;
 	}
 
-	print(toPretify);
+	// print(toPretify);
+	var end = endLine ?? '\n';
+	stdout.write('$toPretify$end');
 
 	if(filePath != null){
 		await _write(filePath, info, clear);
@@ -77,4 +80,4 @@ Future<void> pretifyOutput(String info,
 Future<void> _write(String filePath, String data, bool clear) async {
 	await createFile(filePath, clear: clear);
 	await File(filePath).writeAsString('$data\n', mode: FileMode.append);
-}
+}	
