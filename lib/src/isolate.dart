@@ -20,6 +20,7 @@ Future<Map<String, dynamic>> initIsolate(
 
 	isolate = await Isolate.spawn(callback, [isolateName, isolateToMainStream.sendPort, callbackArgs]);
 	isolateParts['isolate'] = isolate;
+	isolateParts['receiver'] = isolateToMainStream;
 	// isolateParts['isolateToMainStreamPort'] = isolateToMainStream;
 
 	String header = '[$isolateName]';
@@ -48,3 +49,6 @@ Future<Map<String, dynamic>> initIsolate(
 
 	return completer.future;
 }
+
+// plase note
+// so that you complete the future return value from the initIsolate async function, you will have to send SendPort value from the child back to the parent at this location. So that "completer.complete(isolateParts)" completes and returns a value. Otherwise it will hang or return a future/null which breaks code without throwing an exception
