@@ -10,3 +10,4 @@ environment:
 dependencies:
   colorize: any
   postgres: ^2.1.1
+  uuid: ^2.2.2

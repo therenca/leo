@@ -98,6 +98,10 @@ abstract class Server {
 
 abstract class RequestHandler {
 
+	var backToClient = <String, dynamic>{
+		'isSuccessful': false,
+	};
+
 	Future<Map<String, dynamic>> Get([Route route, data]);
 	Future<Map<String, dynamic>> Post([Route route, data]);
 

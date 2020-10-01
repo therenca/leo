@@ -7,8 +7,9 @@ Future<void> Log(String uri, String method, {String header, HttpRequest request,
 	}
 	var now = DateTime.now().toIso8601String();
 
-	await pretifyOutput('[$now]$header[$method]', endLine: '');
+	await pretifyOutput('[$now]$header[$method]', endLine: '', color: 'yellow');
 	await pretifyOutput('[$uri]', endLine: '', color: 'cyan');
-	await pretifyOutput(' <== $data');
+	await pretifyOutput(' <== ', endLine: '', color: 'yellow');
+	await pretifyOutput('$data');
 
 }
