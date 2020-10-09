@@ -5,7 +5,7 @@ Future<void> createFile(filePath, {bool clear=false}) async {
 	var isExists = await File(filePath).exists();
 
 	if(isExists == false){
-		await File(filePath).createSync(recursive: true);
+		await File(filePath).create(recursive: true);
 	} else {
 		if(clear){
 			await File(filePath).writeAsString('');

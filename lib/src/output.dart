@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:async';
-import 'create_file.dart';
 import 'package:colorize/colorize.dart';
+import 'log.dart';
 
 Future<void> formatError(String info, 
 	{
@@ -17,13 +17,13 @@ Future<void> formatError(String info,
 	// errorInfo.apply();
 
 	print(errorInfo);
-	await _write(filePath, '$info:$error', clear);
+	await log('$info:$error', logFile: filePath, clear: clear);
 }
 
 Future<void> pretifyOutput(String info,
 	{
 		String color='', 
-		String filePath,
+		String path,
 		bool clear=false,
 		String endLine,
 	}) async {
@@ -72,12 +72,7 @@ Future<void> pretifyOutput(String info,
 	var end = endLine ?? '\n';
 	stdout.write('$toPretify$end');
 
-	if(filePath != null){
-		await _write(filePath, info, clear);
+	if(path != null){
+		await log(info, logFile: path, clear: clear);
 	}
 }
-
-Future<void> _write(String filePath, String data, bool clear) async {
-	await createFile(filePath, clear: clear);
-	await File(filePath).writeAsString('$data\n', mode: FileMode.append);
-}	

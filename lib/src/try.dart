@@ -18,8 +18,6 @@ Future<dynamic> tryCatch(dynamic callback,
 				results = callback();
 			}
 		}
-
-
 	} catch(e){
 		if(verbose){
 			pretifyOutput('[TRY CATCH] ${e.toString()}', color: 'red');
