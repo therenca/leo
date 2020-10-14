@@ -4,7 +4,6 @@ import 'log.dart';
 import 'http_route.dart';
 import '../output.dart';
 import '../db/db.dart';
-import '../try.dart';
 
 abstract class Server {
 
@@ -124,7 +123,6 @@ abstract class RequestHandler extends DBMixin {
 		'isSuccessful': false,
 	};
 
-	Future<Map<String, dynamic>> Get([Route route, data]);
-	Future<Map<String, dynamic>> Post([Route route, data]);
-
+	Future<Map<String, dynamic>> Get([Route route, Map<String, dynamic> data]);
+	Future<Map<String, dynamic>> Post([Route route, Map<String, dynamic>  data]);
 }

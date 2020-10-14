@@ -8,6 +8,10 @@ class ORM {
 	ORM(this.auth, {this.verbose=false});
 
 	Future<bool> _run(sql, values) async {
+		if(verbose){
+			pretifyOutput('[SQL] $sql');
+		}
+
 		var fromDB = await DB(auth).query(sql, values: values);
 		return fromDB['isSuccessful'];
 	}
@@ -17,10 +21,10 @@ class ORM {
 		
 		values == null ? values = <String, dynamic>{} : values = values; 
 		String whereClause = DB.getWhereClause(values);
+
 		var sql;
 		if(whereClause.isEmpty){
 			sql = 'SELECT $column FROM $table';
-
 		} else {
 			sql = 'SELECT $column FROM $table $whereClause';
 		}
@@ -29,7 +33,7 @@ class ORM {
 			pretifyOutput('[SQL] $sql');
 		}
 		
-		var fromDB = await DB(auth).query(sql, values: values);	
+		var fromDB = await DB(auth).query(sql, values: values);
 		return DB.fromDB(fromDB, table: table);
 	}
 
@@ -69,5 +73,13 @@ class ORM {
 		values['change'] = change;
 
 		return await _run(sql, values);
+	}
+
+	Future<bool> delete(String table, Map<String, dynamic> values) async {
+
+		String whereClause = DB.getWhereClause(values);
+		var sql = 'DELETE FROM $table $whereClause';
+		return await _run(sql, values);
+
 	}
 }

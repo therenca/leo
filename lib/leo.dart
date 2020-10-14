@@ -1,4 +1,4 @@
-library libra;
+library leo;
 
 export 'src/try.dart';
 export 'src/log.dart';
