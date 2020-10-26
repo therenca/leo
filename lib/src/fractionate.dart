@@ -1,6 +1,6 @@
-List<dynamic> fractionate(List<dynamic> listing, int pieces){
+List<List<dynamic>> fractionate(List<dynamic> listing, int pieces){
 
-	var listingF = [];
+	var listingF = <List<dynamic>>[];
 	var distribution = listing.length ~/ pieces;
 
 	var start = 0;

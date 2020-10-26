@@ -10,6 +10,7 @@ abstract class Server {
 	int port;
 	String ip = '0.0.0.0';
 
+	String logFile;
 	String color = 'cyan';
 	String header = 'server';
 	Map<String, RequestHandler> routes;
@@ -84,7 +85,7 @@ abstract class Server {
 		}
 
 		await Log(
-			uri, method, header: header, request: request, data: postData);
+			uri, method, header: header, request: request, data: postData, logFile: logFile);
 
 		if(backToClient != null){
 			request.response.write(jsonEncode(backToClient));

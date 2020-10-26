@@ -92,10 +92,9 @@ class DB {
 						return row[table];
 					}).toList();
 				} else {
-					return data['results'][0][table];
+					return [data['results'][0][table]];
 				}
 			}
 		}
 	}
-
 }
