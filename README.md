@@ -1,3 +1,206 @@
 # Leo
 
-Server utilities to fast track development
+Server utilities to fast track backend development with dart
+
+It is recommended to use the `as` keyword with the `import` statement when importing the package to prevent name conflicts, for example...
+> `import 'package:leo/leo.dart' as leo`
+
+To quickly put a block of code in a try catch.
+```dart
+
+// the argument for tryCatch could either be a callback to a function or a future
+
+// as a function
+Map<String, dynamic> connectToServer(){
+	// may fail to reach the server
+}
+var results = await leo.tryCatch(connectToServer);
+
+// as a future
+Future<Map<String, dynamic>> connectToServer() async {
+	// may fail to reach the server
+}
+
+var future = connectToServer();
+var results = await leo.tryCatch(future);
+
+
+if(results != null){
+	// proceed
+}
+
+```
+
+To log output to file 
+```dart
+await leo.log('data to log', logFile: 'path/to/file', clear: true, time: true);
+```
+
+To generate a random ID
+```dart
+var id = generateUUID(length: 30);
+```
+
+To execute a query on postgres
+```dart
+var dbAuth = {
+	'host': 'localhost',
+	'port': 5432,
+	'db': 'db-name',
+	'username': 'user',
+	'password': 'pass'
+};
+var results = await leo.DB(dbAuth).query('SELECT * FROM table');
+```
+
+Leo has an ORM to help with getting and updating documents from the db (postgres)
+We will be working with a postgres db whose table's schema looks like this
+```sql
+CREATE TABLE IF NOT EXISTS names(
+	id SERIAL PRIMARY KEY,
+	firstname TEXT,
+	lastname TEXT,
+	bio TEXT,
+	age TEXT,
+	dob TEXT
+);
+```
+
+```dart
+// to fetch all documents
+var table = 'names';
+var columns = '*';
+var documents = await leo.ORM(dbAuth).get(table, columns);
+```
+
+```dart
+// to fetch specific documents
+var whereClause = {
+	'firstname': 'john'
+};
+var documents = await leo.ORM(dbAuth).get(table, columns, values: whereClause);
+```
+
+```dart
+// to insert
+var table = 'names'
+var data = {
+	'firstname': 'john',
+	'lastname': 'doe'
+};
+
+var isInserted = await leo.ORM(dbAuth).insert(table, data);
+```
+
+```dart
+// to update
+var table = 'names';
+var column = 'firstname';
+var change = 'james'
+var whereClause = {
+	'id': 1,
+};
+
+var isUpdated = await leo.ORM(dbAuth).update(table, column, change, whereClause);
+```
+
+```dart
+// to delete
+var table = 'names';
+var whereClause = {
+	'id': 1,
+};
+
+var isDeleted = await leo.ORM(dbAuth).delete(table, whereClause);
+```
+
+>To run complex queries use `leo.DB(dbAuth).query` method instead of the orm
+
+To get a random index between a range of indexes
+```dart
+var index = leo.getRandomNumber(min: 10, max: 10000);
+```
+
+To output info on screen with different colors
+```dart
+
+leo.pretifyOutput('to print on screen'); // will print in green
+leo.pretifyOutput('to print on screen', color: 'red');
+```
+
+To start an isolate
+```dart
+var isolatateName = 'test'
+var callback = (){ print('running this isolate')  return 'testing'; };
+var onListenCallback = (data){
+	print(data);
+}
+var isolateInfo = await initIsolate(isolateName, callback, onListenCallback: onListenCallback, verbose: true);
+
+// isolateInfo returns a map with the isolate instance, receiver and the sendPort
+```
+
+To distribute work evenly across workers
+```dart
+var workload = [
+	'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'
+];
+
+var howManyParts = 3;
+var workloadListing = leo.fractionate(workload, howManyParts);
+```
+
+To create a file quickly (will also create the recursive directories on the path)
+```dart
+await leo.createFile('/path/to/file');
+
+// to clear a file/truncate a file
+await leo.createFile('/path/to/file', clear: true);
+```
+
+To create a server.
+The server is suited for APIs
+
+```dart
+// extend the server class
+class MyServer extends leo.Server {
+
+	@override
+	final String header = '[server name]';
+
+	@override
+	final String ip = 'localhost';
+
+	@override
+	final int port = 8080;
+
+	@override
+	final String color = 'cyan';
+
+	@override
+	final String logFile = '/path/to/log';
+
+	@override
+	final Map<String, leo.RequestHandler> routes = {
+		'/test': Test(), // this Test is defined below
+	};
+
+}
+
+class Test extends leo.RequestHandler {
+
+	@override
+	Future<Map<String, dynamic>> Get([route, data]) async {
+
+		return backToClient;
+	}
+
+	@override
+	Future<Map<String, dynamic>> Post([route, data]) async {
+
+
+		return backToClient;
+	}
+
+}
+```

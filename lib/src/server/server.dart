@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'log.dart';
 import 'http_route.dart';
 import '../output.dart';
-import '../db/db.dart';
 
 abstract class Server {
 
@@ -94,31 +93,9 @@ abstract class Server {
 		await request.response.close();
 
 	}
-
-	// Future<Map<String, dynamic>> handleRequests(HttpRequest request);
 }
 
-class DBMixin {
-
-	Future<List<dynamic>> getRows(auth, String table, String sql) async {
-		var results = await DB(auth).query(sql);
-		var listing = [];
-		if(results != null){
-			if(results['isSuccessful']){
-				var _results = results['results'];
-				for(var index=0; index<_results.length; index++){
-					var value = _results[index][table];
-					listing.add(value);
-				}	
-			}
-		}
-
-		return listing;
-	} 
-
-}
-
-abstract class RequestHandler extends DBMixin {
+abstract class RequestHandler {
 
 	var backToClient = <String, dynamic>{
 		'isSuccessful': false,
