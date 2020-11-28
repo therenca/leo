@@ -1,13 +1,13 @@
 name: leo
 description: A set of general utilities for the server
-version: 0.0.1
-author: Therenca Mureithi
-homepage: therencamureithi@gmail.com
+version: 1.0.0
+author: Therenca Mureithi <therencamureithi@gmail.com>
+homepage: 'https://github.com/therenca/leo'
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  colorize: any
+  colorize: ^2.0.0
   postgres: ^2.1.1
   uuid: ^2.2.2

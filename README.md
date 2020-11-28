@@ -191,13 +191,18 @@ class Test extends leo.RequestHandler {
 
 	@override
 	Future<Map<String, dynamic>> Get([route, data]) async {
-
+		var backToClient = <String, dynamic>{
+			'isSuccessful': false,
+		};
+		
 		return backToClient;
 	}
 
 	@override
 	Future<Map<String, dynamic>> Post([route, data]) async {
-
+		var backToClient = <String, dynamic>{
+			'isSuccessful': false,
+		};
 
 		return backToClient;
 	}
