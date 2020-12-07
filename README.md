@@ -95,13 +95,44 @@ var isInserted = await leo.ORM(dbAuth).insert(table, data);
 ```dart
 // to update
 var table = 'names';
-var column = 'firstname';
-var change = 'james'
-var whereClause = {
+var toChange = <String, dynamic>{
+	'firstname':'james'
+};
+var whereClause = <String, dynamic>{
 	'id': 1,
 };
 
-var isUpdated = await leo.ORM(dbAuth).update(table, column, change, whereClause);
+var isUpdated = await leo.ORM(dbAuth).update(table, toChange, whereClause);
+```
+
+```dart
+// to add columns
+var table = 'names';
+var columns = <Map<String, dynamic>>[
+	<String, dynamic>{
+		'name': 'middlename',
+		'type': 'TEXT',
+		'constraints': <String>[
+			'UNIQUE',
+		]
+	},
+
+	<String, dynamic>{
+		'name': 'sirname',
+		'type': 'TEXT',
+		'constraints': <String>[
+			'UNIQUE',
+		]
+	},
+];
+
+var isAddedColumns = await leo.ORM(dbAuth, verbose: true).alter(table, columns, command: 'ADD');
+```
+
+```dart
+// to drop columns
+var columns = <Map<String, dynamic>>[{'name': 'middlename'}, {'name': 'sirname'}];
+var isDropped = leo.ORM(dbAuth, verbose: true).alter(table, columns, command: 'DROP');
 ```
 
 ```dart
