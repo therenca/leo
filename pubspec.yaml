@@ -11,3 +11,5 @@ dependencies:
   colorize: ^2.0.0
   postgres: ^2.1.1
   uuid: ^2.2.2
+  http: ^0.12.1
+  intl: ^0.16.1
