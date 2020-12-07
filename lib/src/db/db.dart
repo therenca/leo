@@ -58,11 +58,11 @@ class DB {
 
 	static String getWhereClause(Map<String, dynamic> values){
 
-		String where;
+		String _where;
 		if(values.length > 0){
-			where = 'WHERE';
+			_where = 'WHERE';
 		} else {
-			where = '';
+			_where = '';
 		}
 
 		int tracker = 0;
@@ -70,17 +70,53 @@ class DB {
 			tracker++;
 
 			if(values.length == 1){
-				where += ' $key=@$key';
+				_where += ' $key=@$key';
 			} else {
 				if(tracker == values.length) {
-					where += ' $key=@$key';
+					_where += ' $key=@$key';
 				} else {
-					where += ' $key=@$key AND';
+					_where += ' $key=@$key AND';
 				}
 			} 
 		});
 
-		return where;
+		return _where;
+	}
+
+	static String getSetClause(Map<String, dynamic> values){
+		String _set = 'SET';
+
+		int tracker = 0;
+		values.forEach((key, value){
+			tracker++;
+
+			if(values.length == 1){
+				_set += ' $key=@$key';
+			} else {
+				if(tracker == values.length) {
+					_set += ' $key=@$key';
+				} else {
+					_set += ' $key=@$key,';
+				}
+			} 
+		});
+
+		return _set;
+
+	}
+
+	static String getConstraints(List<String> constraints){
+		var part = '';
+		int threshold = constraints.length - 1;
+		for(var index=0; index<constraints.length; index++){
+			if(index < threshold){
+				part += '${constraints[index]} ';
+			} else if(index == threshold){
+				part += '${constraints[index]}';
+			}
+		}
+
+		return part;
 	}
 
 	static dynamic fromDB(Map<String, dynamic> data, {String table}){

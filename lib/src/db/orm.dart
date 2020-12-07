@@ -7,7 +7,7 @@ class ORM {
 
 	ORM(this.auth, {this.verbose=false});
 
-	Future<bool> _run(sql, values) async {
+	Future<bool> _run(sql, [values]) async {
 		if(verbose){
 			pretifyOutput('[SQL] $sql');
 		}
@@ -66,13 +66,70 @@ class ORM {
 	}
 
 	Future<bool> update(
-		String table, String column, dynamic change, Map<String, dynamic> values) async {
+		String table, Map<String, dynamic> change, Map<String, dynamic> values) async {
 
 		String whereClause = DB.getWhereClause(values);
-		var sql = 'UPDATE $table SET $column=@change $whereClause';
-		values['change'] = change;
+		String updateClause = DB.getSetClause(change);
+		var sql = 'UPDATE $table $updateClause $whereClause';
+
+		values.addAll(change);
 
 		return await _run(sql, values);
+	}
+
+	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String command}) async {
+
+		String sql = 'ALTER TABLE $table ';
+		var subSql = '$command COLUMN ';
+		var thresholdX = columns.length - 1;
+		for(var index=0; index<columns.length; index++){
+
+			var tempSql = subSql;
+			var column = columns[index];
+			var columnName = column['name'];
+			switch(command){
+
+				case 'ADD': {
+
+					var constraints = '';
+					String dataType = column['type'];
+					List<String> constraintListing = column['constraints'];
+					if(constraintListing != null){
+						constraints = DB.getConstraints(constraintListing);
+					}
+
+					if(constraints.isNotEmpty){
+						tempSql += '$columnName $dataType ' + constraints;
+					} else {
+						tempSql += '$columnName $dataType';
+					}
+
+					if(index < thresholdX){
+						tempSql += ','; 
+					}
+
+					sql += tempSql;
+
+					break;
+				}
+
+				case 'DROP': {
+
+					tempSql += ' $columnName';
+
+					if(index < thresholdX){
+						tempSql += ','; 
+					}
+
+					sql += tempSql; 
+
+					break;
+				}
+
+			}
+		}
+
+		return _run(sql);
 	}
 
 	Future<bool> delete(String table, Map<String, dynamic> values) async {
