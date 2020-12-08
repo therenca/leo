@@ -132,7 +132,7 @@ var isAddedColumns = await leo.ORM(dbAuth, verbose: true).alter(table, columns, 
 ```dart
 // to drop columns
 var columns = <Map<String, dynamic>>[{'name': 'middlename'}, {'name': 'sirname'}];
-var isDropped = leo.ORM(dbAuth, verbose: true).alter(table, columns, command: 'DROP');
+var isDropped = await leo.ORM(dbAuth, verbose: true).alter(table, columns, command: 'DROP');
 ```
 
 ```dart
