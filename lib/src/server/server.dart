@@ -7,7 +7,7 @@ import '../output.dart';
 abstract class Server {
 
 	int port;
-	String ip = '0.0.0.0';
+	String ip = 'localhost';
 
 	String logFile;
 	String color = 'cyan';

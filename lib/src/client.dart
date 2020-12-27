@@ -68,13 +68,20 @@ class Client {
 		} else {
 			uri = httpUri(method);
 		}
-		pretifyOutput('[$_now][$method] $uri');
+		if(verbose){
+			pretifyOutput('[$_now][$method] $uri');
+		}
+		
 		switch(method){
 			case 'POST': {
+				var _headers = {HttpHeaders.contentTypeHeader: 'application/json'};
+				if(headers != null){
+					_headers.addAll(headers);
+				}
 				try {
 					response = await http.post(
 						uri.toString(),
-						headers: {HttpHeaders.contentTypeHeader: 'application/json'},
+						headers: _headers,
 						body: jsonEncode(query),
 					);
 				} catch(e){
@@ -104,12 +111,14 @@ class Client {
 
 		}
 
-		if(response.statusCode == ok){
+		if(response!= null && response.statusCode == ok){
 			if(json){
 				return jsonDecode(response.body);
 			} else {
 				return response.body;
 			}
+		} else {
+			return response.body;
 		}
 	}
 }

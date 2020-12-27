@@ -44,11 +44,11 @@ class DB {
 
 		// thoughts
 		// we are returning here unparsed values from db because
-		// we assume want the data as it is from the db, you can parse
+		// we assume you want the data as it is from the db, you can parse
 		// it yourself
 
 		// the DB.fromDB static method is for parsing the data from the server,
-		// gets sanitized before reaching your. This only works with the ORM.
+		// gets sanitized before reaching you. This only works with the ORM.
 
 		return {
 			'results': results,
