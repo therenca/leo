@@ -71,13 +71,14 @@ class Client {
 		if(verbose){
 			pretifyOutput('[$_now][$method] $uri');
 		}
+
+		var _headers = {HttpHeaders.contentTypeHeader: 'application/json'};
+		if(headers != null){
+			_headers.addAll(headers);
+		}
 		
 		switch(method){
 			case 'POST': {
-				var _headers = {HttpHeaders.contentTypeHeader: 'application/json'};
-				if(headers != null){
-					_headers.addAll(headers);
-				}
 				try {
 					response = await http.post(
 						uri.toString(),
@@ -92,13 +93,29 @@ class Client {
 			}
 
 			case 'GET': {
+				
 				try {
-					response = await http.get(uri.toString(), headers: headers);
+					response = await http.get(uri.toString(), headers: _headers);
 				} catch(e){
 					error = e.toString();
 				}
 				break;
 			}
+
+			case 'PUT': {
+				try{
+					response = await http.put(
+						uri.toString(),
+						headers: _headers,
+						body: jsonEncode(query)
+					);
+				} catch(e){
+					error = e.toString();
+				}
+
+				break;
+			}
+
 		}
 
 		if(verbose){
@@ -118,7 +135,10 @@ class Client {
 				return response.body;
 			}
 		} else {
-			return response.body;
+			return {
+				'body': response.body,
+				'statusCode': response.statusCode
+			};
 		}
 	}
 }
