@@ -14,13 +14,33 @@ abstract class Server {
 	String header = 'server';
 	Map<String, RequestHandler> routes;
 
+	String cert;
+	String privateKey;
+
+	bool https = false;
+
 	Future<void> start() async {
 		await pretifyOutput('$header starting ...', color: color);
+		var server;
 
-		final server = await HttpServer.bind(
-			ip,
-			port,
-		);
+		if(https){
+			assert(cert != null);
+			assert(privateKey != null);
+			SecurityContext security = SecurityContext();
+			security.useCertificateChain(cert);
+			security.usePrivateKey(privateKey);
+			server = await HttpServer.bindSecure(
+				ip,
+				port,
+				security
+			);
+
+		} else {
+			server = await HttpServer.bind(
+				ip,
+				port,
+			);
+		}
 
 		await for (var request in server){
 			await _handleRequests(request);
