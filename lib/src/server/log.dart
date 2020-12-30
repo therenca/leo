@@ -2,7 +2,7 @@ import 'dart:io';
 import '../output.dart';
 import '../log.dart' as log;
 
-Future<void> Log(String uri, String method, {String header, HttpRequest request, dynamic data, String logFile}) async {
+Future<void> Log(String uri, String method, {String header, HttpRequest request, String mimetype, dynamic data, String logFile}) async {
 	if(data == null){
 		data = '-';
 	}
@@ -15,7 +15,7 @@ Future<void> Log(String uri, String method, {String header, HttpRequest request,
 	}
 	var now = DateTime.now().toIso8601String();
 
-	await pretifyOutput('[$now][$ipAddress]$header[$method]', endLine: '', color: 'yellow');
+	await pretifyOutput('[$now][$ipAddress]$header[$method][$mimetype]', endLine: '', color: 'yellow');
 	await pretifyOutput('[$uri]', endLine: '', color: 'cyan');
 	await pretifyOutput(' <== ', endLine: '', color: 'yellow');
 	await pretifyOutput('$data');

@@ -49,18 +49,41 @@ abstract class Server {
 
 	Future<void> _handleRequests(HttpRequest request) async {
 
+		String clientData;
 		Map<String, dynamic> postData;
 		var uri = request.uri.path;
 		var method = request.method;
 		Map<String, dynamic> backToClient;
 		Route route = request.route();
 
+		var mimeType;
 		var contentType = request.headers.contentType;
 		if(contentType != null){
-			var mimeType = contentType.mimeType;
-			if(mimeType == 'application/json'){
-				String postDataJson = await utf8.decoder.bind(request).join();
-				postData = jsonDecode(postDataJson);
+			mimeType = contentType.mimeType;
+
+			clientData = await utf8.decoder.bind(request).join();
+			switch(contentType.mimeType){
+
+				case 'application/json': {
+					postData = jsonDecode(clientData);
+
+					break;
+				}
+
+				case 'application/x-www-form-urlencoded': {
+
+					break;
+				}
+
+				case 'multipart/form-data': {
+
+					break;
+				}
+
+				default: {
+
+					break;
+				}
 			}
 		}
 
@@ -94,7 +117,7 @@ abstract class Server {
 				});
 				if(uriPattern != null){
 					var requestHandler = routes[uriPattern];
-					backToClient = await requestHandler.Post(route, postData);
+					backToClient = await requestHandler.Post(route, postData == null ? clientData : postData);
 				} else {
 					pretifyOutput('[$header][POST] define request handler for $uri');
 				}
@@ -104,7 +127,7 @@ abstract class Server {
 		}
 
 		await Log(
-			uri, method, header: header, request: request, data: postData, logFile: logFile);
+			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
 
 		if(backToClient != null){
 			request.response.write(jsonEncode(backToClient));
