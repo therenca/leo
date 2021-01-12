@@ -222,6 +222,15 @@ class Test extends leo.RequestHandler {
 
 	@override
 	Future<Map<String, dynamic>> Get([route, data]) async {
+
+		// to access get parameters, do this
+		// let's say the get request from the client is
+		// http://localhost/test?key=one
+		
+		// to access the key value
+
+		var key = route.req.uri.queryParameters['key'];
+
 		var backToClient = <String, dynamic>{
 			'isSuccessful': false,
 		};

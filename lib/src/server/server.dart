@@ -58,32 +58,30 @@ abstract class Server {
 
 		var mimeType;
 		var contentType = request.headers.contentType;
-		if(contentType != null){
-			mimeType = contentType.mimeType;
+		// clientData = await utf8.decodeStream(request);
+		clientData = await utf8.decoder.bind(request).join();
+		mimeType = contentType == null ? '' : contentType.mimeType;
+		switch(mimeType){
 
-			clientData = await utf8.decoder.bind(request).join();
-			switch(contentType.mimeType){
+			case 'application/json': {
+				postData = jsonDecode(clientData);
 
-				case 'application/json': {
-					postData = jsonDecode(clientData);
+				break;
+			}
 
-					break;
-				}
+			case 'application/x-www-form-urlencoded': {
 
-				case 'application/x-www-form-urlencoded': {
+				break;
+			}
 
-					break;
-				}
+			case 'multipart/form-data': {
 
-				case 'multipart/form-data': {
+				break;
+			}
 
-					break;
-				}
-
-				default: {
-
-					break;
-				}
+			default: {
+				mimeType = 'Mimetype Not Set';
+				break;
 			}
 		}
 
