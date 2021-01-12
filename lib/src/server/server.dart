@@ -61,6 +61,10 @@ abstract class Server {
 		// clientData = await utf8.decodeStream(request);
 		clientData = await utf8.decoder.bind(request).join();
 		mimeType = contentType == null ? '' : contentType.mimeType;
+
+		await Log(
+			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
+
 		switch(mimeType){
 
 			case 'application/json': {
@@ -124,9 +128,6 @@ abstract class Server {
 			}
 		}
 
-		await Log(
-			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
-
 		if(backToClient != null){
 			request.response.write(jsonEncode(backToClient));
 		}
@@ -137,6 +138,6 @@ abstract class Server {
 }
 
 abstract class RequestHandler {
-	Future<Map<String, dynamic>> Get([Route route, Map<String, dynamic> data]);
-	Future<Map<String, dynamic>> Post([Route route, Map<String, dynamic>  data]);
+	Future<Map<String, dynamic>> Get([Route route, dynamic data]);
+	Future<Map<String, dynamic>> Post([Route route, dynamic data]);
 }
