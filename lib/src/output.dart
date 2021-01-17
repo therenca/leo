@@ -23,6 +23,7 @@ Future<void> formatError(String info,
 Future<void> pretifyOutput(String info,
 	{
 		String color='', 
+		String bgColor='',
 		String path,
 		bool clear=false,
 		String endLine,
@@ -34,38 +35,76 @@ Future<void> pretifyOutput(String info,
 
 		case 'white': {
 			toPretify.white();
+			break;
 		}
-		break;
 
 		case 'red': {
 			toPretify.red();
+			break;
 		}
 		break;
 
 		case 'yellow': {
 			toPretify.yellow();
+			break;
 		}
-		break;
 
 		case 'magenta': {
 			toPretify.magenta();
+			break;
 		}
-		break;
 
 		case 'cyan': {
 			toPretify.cyan();
+			break;
 		}
 		break;
 
 		case 'blue': {
 			toPretify.blue();
+			break;
 		}
-		break;
 
 		default: {
 			toPretify.green();
+			break;
 		}
-		break;
+	}
+
+	if(bgColor.isNotEmpty){
+
+		switch(bgColor){
+
+			case 'white': {
+				toPretify.bgWhite();
+				break;
+			}
+
+			case 'red': {
+				toPretify.bgRed();
+				break;
+			}
+
+			case 'yellow': {
+				toPretify.bgYellow();
+				break;
+			}
+
+			case 'magenta': {
+				toPretify.bgMagenta();
+				break;
+			}
+
+			case 'cyan': {
+				toPretify.bgCyan();
+				break;
+			}
+
+			case 'blue': {
+				toPretify.bgBlue();
+				break;
+			}
+		}
 	}
 
 	// print(toPretify);
