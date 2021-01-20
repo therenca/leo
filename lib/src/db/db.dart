@@ -130,6 +130,8 @@ class DB {
 				} else {
 					return [data['results'][0][table]];
 				}
+			} else {
+				return [];
 			}
 		}
 	}

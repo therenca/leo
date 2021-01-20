@@ -139,4 +139,9 @@ class ORM {
 		return await _run(sql, values);
 
 	}
+
+	Future<bool> clear(String table) async {
+		var sql = 'TRUNCATE TABLE $table';
+		return await _run(sql);
+	}
 }
