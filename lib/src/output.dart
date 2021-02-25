@@ -3,23 +3,6 @@ import 'dart:async';
 import 'package:colorize/colorize.dart';
 import 'log.dart';
 
-Future<void> formatError(String info, 
-	{
-		String error='',
-		String filePath,
-		bool clear=false
-	}) async {
-
-	Colorize errorInfo = Colorize('$info: $error');
-	errorInfo.red();
-	// errorInfo.bgWhite();
-	// errorInfo.blink();
-	// errorInfo.apply();
-
-	print(errorInfo);
-	await log('$info:$error', logFile: filePath, clear: clear);
-}
-
 Future<void> pretifyOutput(String info,
 	{
 		String color='', 

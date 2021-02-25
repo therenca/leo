@@ -129,11 +129,11 @@ abstract class Server {
 		}
 
 		if(backToClient != null){
+			request.response.headers.contentType = ContentType.json;
 			request.response.write(jsonEncode(backToClient));
 		}
 
 		await request.response.close();
-
 	}
 }
 
