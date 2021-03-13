@@ -49,7 +49,7 @@ abstract class Server {
 
 	Future<void> _handleRequests(HttpRequest request) async {
 
-		String clientData;
+		var clientData;
 		Map<String, dynamic> postData;
 		var uri = request.uri.path;
 		var method = request.method;
@@ -59,15 +59,14 @@ abstract class Server {
 		var mimeType;
 		var contentType = request.headers.contentType;
 		// clientData = await utf8.decodeStream(request);
-		clientData = await utf8.decoder.bind(request).join();
+		// clientData = await utf8.decoder.bind(request).join();
 		mimeType = contentType == null ? '' : contentType.mimeType;
 
-		await Log(
-			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
 
 		switch(mimeType){
 
 			case 'application/json': {
+				clientData = await utf8.decoder.bind(request).join();
 				postData = jsonDecode(clientData);
 
 				break;
@@ -79,7 +78,7 @@ abstract class Server {
 			}
 
 			case 'multipart/form-data': {
-
+				clientData = request;
 				break;
 			}
 
@@ -88,6 +87,9 @@ abstract class Server {
 				break;
 			}
 		}
+
+		await Log(
+			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
 
 		var uriPattern;
 		switch(method){

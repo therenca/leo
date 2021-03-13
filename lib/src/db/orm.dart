@@ -7,12 +7,12 @@ class ORM {
 
 	ORM(this.auth, {this.verbose=false});
 
-	Future<bool> _run(sql, [values]) async {
+	Future<bool> _run(sql, [Map<String, dynamic>values, String table]) async {
 		if(verbose){
 			pretifyOutput('[SQL] $sql');
 		}
 
-		var fromDB = await DB(auth).query(sql, values: values);
+		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
 		return fromDB['isSuccessful'];
 	}
 
@@ -33,7 +33,7 @@ class ORM {
 			pretifyOutput('[SQL] $sql');
 		}
 		
-		var fromDB = await DB(auth).query(sql, values: values);
+		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
 		return DB.fromDB(fromDB, table: table);
 	}
 
@@ -62,7 +62,7 @@ class ORM {
 
 		var sql = 'INSERT INTO $table ($columns) values($valuesF)';
 		
-		return await _run(sql, values);
+		return await _run(sql, values, table);
 	}
 
 	Future<bool> update(
@@ -74,7 +74,7 @@ class ORM {
 
 		values.addAll(change);
 
-		return await _run(sql, values);
+		return await _run(sql, values, table);
 	}
 
 	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String command}) async {
@@ -129,19 +129,19 @@ class ORM {
 			}
 		}
 
-		return _run(sql);
+		return _run(sql, <String, dynamic>{}, table);
 	}
 
 	Future<bool> delete(String table, Map<String, dynamic> values) async {
 
 		String whereClause = DB.getWhereClause(values);
 		var sql = 'DELETE FROM $table $whereClause';
-		return await _run(sql, values);
+		return await _run(sql, values, table);
 
 	}
 
 	Future<bool> clear(String table) async {
 		var sql = 'TRUNCATE TABLE $table';
-		return await _run(sql);
+		return await _run(sql, <String, dynamic>{}, table);
 	}
 }
