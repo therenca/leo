@@ -14,6 +14,10 @@ abstract class Server {
 	String header = 'server';
 	Map<String, RequestHandler> routes;
 
+	// thoughts
+	// let's have a global middleware utility option
+	// that asserts for expected values on all uris/requests before proceeding
+
 	String cert;
 	String privateKey;
 
@@ -103,7 +107,10 @@ abstract class Server {
 				});
 				if(uriPattern != null){
 					var requestHandler = routes[uriPattern];
-					backToClient = await requestHandler.Get(route, postData);
+					var proceed = await requestHandler.Middleware(uriPattern, route, postData);
+					if(proceed){
+						backToClient = await requestHandler.Get(route, postData);
+					}
 				} else {
 					pretifyOutput('[$header][GET] define request handler for $uri');
 				}
@@ -121,7 +128,10 @@ abstract class Server {
 				});
 				if(uriPattern != null){
 					var requestHandler = routes[uriPattern];
-					backToClient = await requestHandler.Post(route, postData == null ? clientData : postData);
+					var proceed = await requestHandler.Middleware(uriPattern, route, postData == null ? clientData : postData);
+					if(proceed){
+						backToClient = await requestHandler.Post(route, postData == null ? clientData : postData);
+					}
 				} else {
 					pretifyOutput('[$header][POST] define request handler for $uri');
 				}
@@ -142,4 +152,7 @@ abstract class Server {
 abstract class RequestHandler {
 	Future<Map<String, dynamic>> Get([Route route, dynamic data]);
 	Future<Map<String, dynamic>> Post([Route route, dynamic data]);
+	Future<bool> Middleware(String uri, [Route route, dynamic data]) async {
+		return true;
+	}
 }
