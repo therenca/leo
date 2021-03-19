@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:leo/leo.dart';
+
 import 'log.dart';
 import 'http_route.dart';
 import '../output.dart';
@@ -12,11 +14,13 @@ abstract class Server {
 	String logFile;
 	String color = 'cyan';
 	String header = 'server';
+
 	Map<String, RequestHandler> routes;
 
 	// thoughts
 	// let's have a global middleware utility option
 	// that asserts for expected values on all uris/requests before proceeding
+	Middleware middleware;
 
 	String cert;
 	String privateKey;
@@ -51,10 +55,31 @@ abstract class Server {
 		}
 	}
 
+	Future<bool> _handleMiddleware(String uri, RequestHandler handler, [Route route, dynamic data]) async {
+
+		var isProceed = false;
+		if(handler.middleware != null){
+			for(var index=0; index<handler.middleware.length; index++){
+				var name = handler.middleware[index].name; 
+				handler.middleware[index].data = data;
+				handler.middleware[index].uri = uri;
+				handler.middleware[index].route = route;
+				isProceed = await handler.middleware[index].run();
+
+				if(!isProceed){
+					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: 'red');
+				}
+			}
+		} else {
+			isProceed = true;
+		}
+
+		return isProceed;
+	}
+
 	Future<void> _handleRequests(HttpRequest request) async {
 
 		var clientData;
-		Map<String, dynamic> postData;
 		var uri = request.uri.path;
 		var method = request.method;
 		Map<String, dynamic> backToClient;
@@ -62,16 +87,14 @@ abstract class Server {
 
 		var mimeType;
 		var contentType = request.headers.contentType;
-		// clientData = await utf8.decodeStream(request);
-		// clientData = await utf8.decoder.bind(request).join();
 		mimeType = contentType == null ? '' : contentType.mimeType;
 
 
 		switch(mimeType){
 
 			case 'application/json': {
-				clientData = await utf8.decoder.bind(request).join();
-				postData = jsonDecode(clientData);
+				var jsonString = await utf8.decoder.bind(request).join();
+				clientData = jsonDecode(jsonString);
 
 				break;
 			}
@@ -96,6 +119,8 @@ abstract class Server {
 			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
 
 		var uriPattern;
+		var isGloblMiddlewareSuccessful = true; // by default
+		var isMiddlewarePerRequestSuccessful;
 		switch(method){
 
 			case 'GET': {
@@ -106,11 +131,24 @@ abstract class Server {
 					}
 				});
 				if(uriPattern != null){
-					var requestHandler = routes[uriPattern];
-					var proceed = await requestHandler.Middleware(uriPattern, route, postData);
-					if(proceed){
-						backToClient = await requestHandler.Get(route, postData);
+
+					if(middleware != null){
+						middleware.route = route;
+						middleware.uri = uriPattern;
+						middleware.data = clientData;
+						isGloblMiddlewareSuccessful = await middleware.run();
 					}
+
+					if(isGloblMiddlewareSuccessful){
+						var requestHandler = routes[uriPattern];
+						isMiddlewarePerRequestSuccessful = await _handleMiddleware(uriPattern, requestHandler, route, clientData);
+
+						if(isMiddlewarePerRequestSuccessful){
+							backToClient = await requestHandler.Get(route, clientData);
+						}
+					}
+
+
 				} else {
 					pretifyOutput('[$header][GET] define request handler for $uri');
 				}
@@ -127,11 +165,22 @@ abstract class Server {
 					}
 				});
 				if(uriPattern != null){
-					var requestHandler = routes[uriPattern];
-					var proceed = await requestHandler.Middleware(uriPattern, route, postData == null ? clientData : postData);
-					if(proceed){
-						backToClient = await requestHandler.Post(route, postData == null ? clientData : postData);
+
+					if(middleware != null){
+						middleware.route = route;
+						middleware.uri = uriPattern;
+						middleware.data = clientData;
+						isGloblMiddlewareSuccessful = await middleware.run();
 					}
+
+					if(isGloblMiddlewareSuccessful){
+						var requestHandler = routes[uriPattern];
+						isMiddlewarePerRequestSuccessful = await _handleMiddleware(uriPattern, requestHandler, route, clientData);
+						if(isMiddlewarePerRequestSuccessful){
+							backToClient = await requestHandler.Post(route, clientData);
+						}
+					}
+
 				} else {
 					pretifyOutput('[$header][POST] define request handler for $uri');
 				}
@@ -143,16 +192,32 @@ abstract class Server {
 		if(backToClient != null){
 			request.response.headers.contentType = ContentType.json;
 			request.response.write(jsonEncode(backToClient));
+		} else {
+			if(!isGloblMiddlewareSuccessful || !isMiddlewarePerRequestSuccessful){
+				if(!isGloblMiddlewareSuccessful){
+					await pretifyOutput('[MAIN MIDDLEWARE | ${middleware.name} | $uriPattern] check failed', color: 'red');
+				}
+				request.response.statusCode = HttpStatus.forbidden;
+			}
 		}
 
 		await request.response.close();
 	}
 }
 
+
 abstract class RequestHandler {
+	List<Middleware> middleware;
 	Future<Map<String, dynamic>> Get([Route route, dynamic data]);
 	Future<Map<String, dynamic>> Post([Route route, dynamic data]);
-	Future<bool> Middleware(String uri, [Route route, dynamic data]) async {
-		return true;
-	}
+}
+
+abstract class Middleware {
+
+	String uri;
+	Route route;
+	dynamic data;
+	String name = 'Middleware (Set unique name for middleware)';
+
+	Future<bool> run();
 }
