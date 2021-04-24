@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import 'output.dart';
@@ -13,13 +15,13 @@ class Client {
 	String method;
 	bool isSecured;
 	bool verbose;
-	bool json;
 	Map<String, String> headers;
 	String _now;
 	final int ok = 200;
 	List<int> expectedStatusCodes; // anticipate successful response
 
 	int _statusCode;
+	String _uri;
 
 	final String header = '[CLIENT]';
 
@@ -28,7 +30,6 @@ class Client {
 		this.serverPort,
 		this.path,{
 			this.query,
-			this.json=true,
 			this.verbose=false,
 			this.isSecured=false,
 			this.headers,
@@ -45,6 +46,7 @@ class Client {
 		_now = DateTime.now().toString();
 	}
 
+	String get uri => _uri;
 	int get statusCode => _statusCode;
 
 	Uri httpUri (String method){
@@ -70,10 +72,11 @@ class Client {
 		return uri;
 	}
 
-	Future<dynamic> getResponse({String method='POST'}) async {
+	Future<dynamic> getResponse({String method='POST', Map<String, String> multipartInfo, Map<String, String> files}) async {
 		
 		String error;
-		http.Response response;
+		// http.Response response;
+		var response;
 
 		var uri;
 		if(isSecured){
@@ -81,6 +84,8 @@ class Client {
 		} else {
 			uri = httpUri(method);
 		}
+		
+		_uri = uri.toString();
 		if(verbose){
 			pretifyOutput('[$_now][$method] $uri');
 		}
@@ -93,11 +98,30 @@ class Client {
 		switch(method){
 			case 'POST': {
 				try {
-					response = await http.post(
-						uri.toString(),
-						headers: _headers,
-						body: jsonEncode(query),
-					);
+					if(multipartInfo != null || files != null){
+						var request = http.MultipartRequest('POST', uri);
+						request.fields.addAll(multipartInfo != null ? multipartInfo : <String, String>{});
+
+						if(files != null){
+							files.forEach((String fileName, String filePath) async {
+								var file = await http.MultipartFile.fromPath(
+									fileName,
+									filePath
+								);
+								request.files.add(file);
+							});
+						}
+
+						response = await request.send();
+						
+					} else {
+
+						response = await http.post(
+							uri,
+							headers: _headers,
+							body: jsonEncode(query),
+						);
+					}
 				} catch(e){
 					error = e.toString();
 				}
@@ -108,7 +132,7 @@ class Client {
 			case 'GET': {
 				
 				try {
-					response = await http.get(uri.toString(), headers: _headers);
+					response = await http.get(uri, headers: _headers);
 				} catch(e){
 					error = e.toString();
 				}
@@ -118,7 +142,7 @@ class Client {
 			case 'PUT': {
 				try{
 					response = await http.put(
-						uri.toString(),
+						uri,
 						headers: _headers,
 						body: jsonEncode(query)
 					);
@@ -128,27 +152,97 @@ class Client {
 
 				break;
 			}
-
 		}
 
-		if(verbose){
-			if(error != null){
-				pretifyOutput('[$_now][HTTP ERROR] $error', color: 'red');
-				return;
-			} else {
-				pretifyOutput('[$_now][SERVER RESPONSE][${response.statusCode}] ${response.body}');
-			}
-		}
-
+		var bodyStr;
 		if(response != null){
+
+			if(response is http.StreamedResponse){
+				bodyStr = await response.stream.bytesToString();
+			} else {
+				bodyStr = response.body;
+			}
+
+			if(verbose){
+				if(error != null){
+					pretifyOutput('[$_now][HTTP ERROR] $error', color: 'red');
+					return;
+				} else {
+					pretifyOutput('[$_now][SERVER RESPONSE][${response.statusCode}] $bodyStr');
+				}
+			}
+
 			_statusCode = response.statusCode;
 			if(expectedStatusCodes.contains(_statusCode)){
-				if(json){
-					return jsonDecode(response.body);
+				// thoughts
+				// we are using contain because the full header could return 
+				// e.g 'application/json; charset=utf-8
+				if(response.headers['content-type'].contains('application/json')){
+					return jsonDecode(bodyStr);
 				} else {
-					return response.body;
+					return bodyStr;
 				}
 			}
 		}
+	}
+
+	Future<Uint8List> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double> controller}) async {
+		var uri;
+		Uint8List binary;
+		if(isSecured){
+			uri = httpsUri(method);
+		} else {
+			uri = httpUri(method);
+		}
+
+		_uri = uri.toString();
+		var client = http.Client();
+		var request = http.Request(method, uri);
+		http.StreamedResponse response = await client.send(request);
+		_statusCode = response.statusCode;
+		var file = await File(filePath).create();
+		switch(size){
+
+			case 'small': {
+				binary =  await response.stream.toBytes();
+				await file.writeAsBytes(binary);
+				break;
+			}
+
+			case 'large': {
+
+				var received = 0;
+				var length = response.contentLength;
+				
+				var sink = file.openWrite();
+				List<int> fullBytes = [];
+				await response.stream.map((List<int> bytes){
+					received += bytes.length;
+					fullBytes += bytes;
+
+					if(verbose){
+						pretifyOutput('[DOWNLOAD | $size] $received / $length');
+					}
+
+					if(controller != null){
+						var downloadProgress = received / length;
+						controller.sink.add(downloadProgress);
+
+						if(length == received){
+							controller.close();
+						}
+					}
+
+					return bytes;
+				}).pipe(sink);
+
+				sink.close();
+				binary = Uint8List.fromList(fullBytes);
+
+				break;
+			}
+		}
+
+		return binary;
 	}
 }

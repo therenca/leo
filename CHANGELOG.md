@@ -11,3 +11,6 @@
 
 ### 1.0.4
 - Middleware integration added
+
+### 1.0.4+1
+- updated download method in Client
