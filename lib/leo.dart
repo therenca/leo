@@ -11,6 +11,7 @@ export 'src/random.dart';
 export 'src/output.dart';
 export 'src/isolate.dart';
 export 'src/server/log.dart';
+export 'src/validators.dart';
 export 'src/fractionate.dart';
 export 'src/create_file.dart';
 export 'src/server/server.dart';

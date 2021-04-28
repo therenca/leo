@@ -10,6 +10,6 @@ environment:
 dependencies:
   colorize: ^2.0.0
   postgres: ^2.1.1
-  uuid: ^2.2.2
-  http: ^0.12.1
-  intl: ^0.16.1
+  uuid: ^3.0.0
+  http: ^0.13.0
+  intl: ^0.17.0
