@@ -14,3 +14,6 @@
 
 ### 1.0.4+1
 - updated download method in Client
+
+### 1.0.4+2
+- added validators
