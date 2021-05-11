@@ -132,6 +132,25 @@ class ORM {
 		return _run(sql, <String, dynamic>{}, table);
 	}
 
+	Future<int> count(String table, {Map<String, dynamic> values}) async {
+		var sql;
+		if(values != null){
+			String whereCaluse = DB.getWhereClause(values);
+			sql = 'SELECT COUNT(*) FROM $table $whereCaluse';
+		} else {
+			sql = 'SELECT COUNT (*) FROM $table';
+		}
+
+		if(verbose){
+			pretifyOutput('[SQL] $sql');
+		}
+
+		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
+		var counted = DB.fromDB(fromDB, table: table, action: 'count');
+
+		return counted;		
+	}
+
 	Future<bool> delete(String table, Map<String, dynamic> values) async {
 
 		String whereClause = DB.getWhereClause(values);

@@ -119,7 +119,7 @@ class DB {
 		return part;
 	}
 
-	static dynamic fromDB(Map<String, dynamic> data, {String table}){
+	static dynamic fromDB(Map<String, dynamic> data, {String table, String action}){
 
 		if(data['isSuccessful']){
 			if(!data['results'].isEmpty){
@@ -128,7 +128,25 @@ class DB {
 						return row[table];
 					}).toList();
 				} else {
-					return [data['results'][0][table]];
+					var formatted = [data['results'][0][table]];
+					if(formatted.first == null){
+						// thoughts
+						// count sql command only returns one result, without a table
+						// {results: [{: {count: 0}}], isSuccessful: true}
+
+						var parsed;
+						switch(action){
+
+							case 'count': {
+								parsed = data['results'].first['']['count'];
+							}
+						}
+						
+						return parsed;
+
+					} else {
+						return formatted;
+					}
 				}
 			} else {
 				return [];
