@@ -41,7 +41,6 @@ Future<void> pretifyOutput(String info,
 			toPretify.cyan();
 			break;
 		}
-		break;
 
 		case 'blue': {
 			toPretify.blue();
@@ -90,9 +89,9 @@ Future<void> pretifyOutput(String info,
 		}
 	}
 
-	// print(toPretify);
 	var end = endLine ?? '\n';
 	stdout.write('$toPretify$end');
+	// print('$toPretify$end');
 
 	if(path != null){
 		await log(info, logFile: path, clear: clear);

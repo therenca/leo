@@ -19,6 +19,7 @@ class Client {
 	String _now;
 	final int ok = 200;
 	List<int> expectedStatusCodes; // anticipate successful response
+	String contentType;
 
 	int _statusCode;
 	String _uri;
@@ -33,7 +34,8 @@ class Client {
 			this.verbose=false,
 			this.isSecured=false,
 			this.headers,
-			this.expectedStatusCodes
+			this.expectedStatusCodes,
+			this.contentType='application/json',
 		}){
 		
 		if(expectedStatusCodes != null){
@@ -90,7 +92,7 @@ class Client {
 			pretifyOutput('[$_now][$method] $uri');
 		}
 
-		var _headers = {HttpHeaders.contentTypeHeader: 'application/json'};
+		var _headers = {HttpHeaders.contentTypeHeader: contentType};
 		if(headers != null){
 			_headers.addAll(headers);
 		}
@@ -119,7 +121,7 @@ class Client {
 						response = await http.post(
 							uri,
 							headers: _headers,
-							body: jsonEncode(query),
+							body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
 						);
 					}
 				} catch(e){
@@ -144,7 +146,7 @@ class Client {
 					response = await http.put(
 						uri,
 						headers: _headers,
-						body: jsonEncode(query)
+						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
 					);
 				} catch(e){
 					error = e.toString();
@@ -188,6 +190,7 @@ class Client {
 
 	Future<Uint8List> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double> controller}) async {
 		var uri;
+		var file;
 		Uint8List binary;
 		if(isSecured){
 			uri = httpsUri(method);
@@ -200,44 +203,51 @@ class Client {
 		var request = http.Request(method, uri);
 		http.StreamedResponse response = await client.send(request);
 		_statusCode = response.statusCode;
-		var file = await File(filePath).create();
+
+		if(filePath.isNotEmpty){
+			file = await File(filePath).create();
+		}
+
 		switch(size){
 
 			case 'small': {
 				binary =  await response.stream.toBytes();
-				await file.writeAsBytes(binary);
+				file != null ? await file.writeAsBytes(binary) : file = null;
 				break;
 			}
 
 			case 'large': {
 
-				var received = 0;
-				var length = response.contentLength;
-				
-				var sink = file.openWrite();
-				List<int> fullBytes = [];
-				await response.stream.map((List<int> bytes){
-					received += bytes.length;
-					fullBytes += bytes;
+				if(filePath.isNotEmpty){
 
-					if(verbose){
-						pretifyOutput('[DOWNLOAD | $size] $received / $length');
-					}
+					var received = 0;
+					var length = response.contentLength;
+					
+					var sink = file.openWrite();
+					List<int> fullBytes = [];
+					await response.stream.map((List<int> bytes){
+						received += bytes.length;
+						fullBytes += bytes;
 
-					if(controller != null){
-						var downloadProgress = received / length;
-						controller.sink.add(downloadProgress);
-
-						if(length == received){
-							controller.close();
+						if(verbose){
+							pretifyOutput('[DOWNLOAD | $size] $received / $length');
 						}
-					}
 
-					return bytes;
-				}).pipe(sink);
+						if(controller != null){
+							var downloadProgress = received / length;
+							controller.sink.add(downloadProgress);
 
-				sink.close();
-				binary = Uint8List.fromList(fullBytes);
+							if(length == received){
+								controller.close();
+							}
+						}
+
+						return bytes;
+					}).pipe(sink);
+
+					sink.close();
+					binary = Uint8List.fromList(fullBytes);
+				}
 
 				break;
 			}

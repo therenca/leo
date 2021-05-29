@@ -20,3 +20,6 @@
 
 ### 1.0.4+3
 - added count to ORM
+
+### 1.0.4+4
+- added checks for content type
