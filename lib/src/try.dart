@@ -2,11 +2,11 @@ import 'dart:async';
 import 'output.dart';
 
 Future<dynamic> tryCatch(dynamic callback, 
-	{List<dynamic> args, bool verbose=false}) async {
+	{List<dynamic> args, bool verbose=false, dynamic onError}) async {
 	Completer completer = Completer<dynamic>();
 
 	var results;
-	try{
+	try {
 		if(callback is Future){
 			results = await callback;
 		}
@@ -21,6 +21,18 @@ Future<dynamic> tryCatch(dynamic callback,
 	} catch(e){
 		if(verbose){
 			pretifyOutput('[TRY CATCH] ${e.toString()}', color: 'red');
+		}
+
+		if(onError != null){
+			if(onError is Future){
+				await onError;
+			}
+
+			if(onError is Function){
+				onError();
+			}
+			
+			onError();
 		}
 	}
 

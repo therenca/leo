@@ -1,7 +1,6 @@
 name: leo
 description: A set of general utilities for the server
-version: 1.0.4+3
-author: Therenca Mureithi <therencamureithi@gmail.com>
+version: 1.0.4+4
 homepage: 'https://github.com/therenca/leo'
 
 environment:
