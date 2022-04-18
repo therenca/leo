@@ -2,7 +2,7 @@ import 'dart:io';
 import 'create_file.dart';
 
 Future<void> log(String data, {
-	String logFile,
+	String? logFile,
 	bool clear=false,
 	bool time=true
 }) async {
@@ -16,5 +16,7 @@ Future<void> log(String data, {
 		output = '$data\n';
 	}
 
-	await File(logFile).writeAsString(output, mode: FileMode.append);
+	if(logFile != null){
+		await File(logFile ).writeAsString(output, mode: FileMode.append);
+	}
 }

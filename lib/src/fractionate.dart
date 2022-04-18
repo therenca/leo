@@ -7,7 +7,7 @@ List<List<dynamic>> fractionate(List<dynamic> listing, int pieces){
 	var end = distribution;
 	while(true){
 		
-		List<dynamic> segmentRange;
+		List<dynamic>? segmentRange;
 		if(start < listing.length){
 			if(end < listing.length){
 				segmentRange = listing.sublist(start, end);

@@ -11,18 +11,18 @@ class Client {
 	String serverIp;
 	int serverPort;
 	String path;
-	Map <String, dynamic>query;
-	String method;
+	Map <String, dynamic>? query;
+	late String method;
 	bool isSecured;
 	bool verbose;
-	Map<String, String> headers;
-	String _now;
+	Map<String, String>? headers;
+	late String _now;
 	final int ok = 200;
-	List<int> expectedStatusCodes; // anticipate successful response
+	List<int>? expectedStatusCodes; // anticipate successful response
 	String contentType;
 
-	int _statusCode;
-	String _uri;
+	late int _statusCode;
+	late String _uri;
 
 	final String header = '[CLIENT]';
 
@@ -39,12 +39,13 @@ class Client {
 		}){
 		
 		if(expectedStatusCodes != null){
-			if(!expectedStatusCodes.contains(ok)){
-				expectedStatusCodes.add(ok);
+			if(!expectedStatusCodes!.contains(ok)){
+				expectedStatusCodes!.add(ok);
 			}
 		}  else {
 			expectedStatusCodes = [ok];
 		}
+
 		_now = DateTime.now().toString();
 	}
 
@@ -54,7 +55,7 @@ class Client {
 	Uri httpUri (String method){
 		Uri uri;
 		if(query != null && method == 'GET'){	
-			Map<String, String> _query = query.cast<String, String>();
+			Map<String, String> _query = query!.cast<String, String>();
 			uri = Uri.http('$serverIp:$serverPort', path, _query);
 		} else {
 			uri = Uri.http('$serverIp:$serverPort', path);
@@ -66,7 +67,7 @@ class Client {
 	Uri httpsUri (String method){
 		Uri uri;
 		if(query != null && method == 'GET'){
-			Map<String, String> _query = query.cast<String, String>();	
+			Map<String, String> _query = query!.cast<String, String>();	
 			uri = Uri.https('$serverIp:$serverPort', path, _query);
 		} else {
 			uri = Uri.https('$serverIp:$serverPort', path);
@@ -74,9 +75,9 @@ class Client {
 		return uri;
 	}
 
-	Future<dynamic> getResponse({String method='POST', Map<String, String> multipartInfo, Map<String, String> files}) async {
+	Future<dynamic> getResponse({String method='POST', Map<String, String>?multipartInfo, Map<String, String>? files}) async {
 		
-		String error;
+		String? error;
 		// http.Response response;
 		var response;
 
@@ -94,7 +95,7 @@ class Client {
 
 		var _headers = {HttpHeaders.contentTypeHeader: contentType};
 		if(headers != null){
-			_headers.addAll(headers);
+			_headers.addAll(headers!);
 		}
 		
 		switch(method){
@@ -175,7 +176,7 @@ class Client {
 			}
 
 			_statusCode = response.statusCode;
-			if(expectedStatusCodes.contains(_statusCode)){
+			if(expectedStatusCodes!.contains(_statusCode)){
 				// thoughts
 				// we are using contain because the full header could return 
 				// e.g 'application/json; charset=utf-8
@@ -188,10 +189,10 @@ class Client {
 		}
 	}
 
-	Future<Uint8List> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double> controller}) async {
+	Future<Uint8List> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double>? controller}) async {
 		var uri;
 		var file;
-		Uint8List binary;
+		late Uint8List binary;
 		if(isSecured){
 			uri = httpsUri(method);
 		} else {
@@ -234,7 +235,7 @@ class Client {
 						}
 
 						if(controller != null){
-							var downloadProgress = received / length;
+							var downloadProgress = received / length!;
 							controller.sink.add(downloadProgress);
 
 							if(length == received){

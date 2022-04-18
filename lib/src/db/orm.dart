@@ -7,7 +7,7 @@ class ORM {
 
 	ORM(this.auth, {this.verbose=false});
 
-	Future<bool> _run(sql, [Map<String, dynamic>values, String table]) async {
+	Future<bool> _run(sql, [Map<String, dynamic>?values, String? table]) async {
 		if(verbose){
 			pretifyOutput('[SQL] $sql');
 		}
@@ -17,7 +17,7 @@ class ORM {
 	}
 
 	Future<dynamic> get(
-		String table, String column, {Map<String, dynamic> values}) async {
+		String table, String column, {Map<String, dynamic>? values}) async {
 		
 		values == null ? values = <String, dynamic>{} : values = values; 
 		String whereClause = DB.getWhereClause(values);
@@ -77,7 +77,7 @@ class ORM {
 		return await _run(sql, values, table);
 	}
 
-	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String command}) async {
+	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String? command}) async {
 
 		String sql = 'ALTER TABLE $table ';
 		var subSql = '$command COLUMN ';
@@ -93,7 +93,7 @@ class ORM {
 
 					var constraints = '';
 					String dataType = column['type'];
-					List<String> constraintListing = column['constraints'];
+					List<String>? constraintListing = column['constraints'];
 					if(constraintListing != null){
 						constraints = DB.getConstraints(constraintListing);
 					}
@@ -132,7 +132,7 @@ class ORM {
 		return _run(sql, <String, dynamic>{}, table);
 	}
 
-	Future<int> count(String table, {Map<String, dynamic> values}) async {
+	Future<int> count(String table, {Map<String, dynamic>? values}) async {
 		var sql;
 		if(values != null){
 			String whereCaluse = DB.getWhereClause(values);

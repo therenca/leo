@@ -7,9 +7,9 @@ Future<void> pretifyOutput(String info,
 	{
 		String color='', 
 		String bgColor='',
-		String path,
+		String? path,
 		bool clear=false,
-		String endLine,
+		String? endLine,
 	}) async {
 
 	Colorize toPretify = Colorize(info);
@@ -25,7 +25,6 @@ Future<void> pretifyOutput(String info,
 			toPretify.red();
 			break;
 		}
-		break;
 
 		case 'yellow': {
 			toPretify.yellow();

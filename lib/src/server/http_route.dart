@@ -3,20 +3,20 @@ import 'dart:io';
 class Route {
 	final String method;
 	final String uriPath;
-	String matchedWith;
-	List<String> _params;
-	Map<String, int> _paramIndices;
+	String? matchedWith;
+	List<String>? _params;
+	Map<String, int>? _paramIndices;
 
-	HttpRequest req;
+	HttpRequest? req;
 
 	Route(this.method, this.uriPath, [this.req]);
 
-	String param(String param) {
-		if (!_paramIndices.containsKey(param)) {
+	String? param(String param) {
+		if (!_paramIndices!.containsKey(param)) {
 			return null;
 		}
 
-		return this._params[_paramIndices[param]];
+		return this._params![_paramIndices![param]!];
 	}
 
 	String toString() => '$method $uriPath';
@@ -35,7 +35,7 @@ class Route {
 		final ownPathSegments =
 				this.uriPath.split('/').where((c) => c.isNotEmpty).toList();
 		final otherPathSegments =
-				(other as Route).uriPath.split('/').where((c) => c.isNotEmpty).toList();
+			other.uriPath.split('/').where((c) => c.isNotEmpty).toList();
 
 		if (ownPathSegments.length != otherPathSegments.length) return false;
 

@@ -2,7 +2,7 @@ import 'dart:io';
 import '../output.dart';
 import '../log.dart' as log;
 
-Future<void> Log(String uri, String method, {String header, HttpRequest request, String mimetype, dynamic data, String logFile}) async {
+Future<void> Log(String uri, String method, {String? header, HttpRequest? request, String? mimetype, dynamic data, String? logFile}) async {
 	if(data == null){
 		data = '-';
 	} else if(data is HttpRequest){

@@ -6,9 +6,9 @@ import '../output.dart';
 
 class DB {
 	dynamic _conn;
-	String errorFile;
+	String? errorFile;
 	Map<String, dynamic> auth;
-	DB(this.auth, {String this.errorFile}){
+	DB(this.auth, {this.errorFile}){
 
 		_conn = PostgreSQLConnection(
 			auth['host'], auth['port'], auth['db'],
@@ -18,7 +18,7 @@ class DB {
 	}
 
 	Future<Map<String, dynamic>> query(
-		String sql, {Map<String, dynamic> values, String identifier}) async {
+		String sql, {Map<String, dynamic>? values, String? identifier}) async {
 		
 		await _conn.open();
 
@@ -36,7 +36,7 @@ class DB {
 
 			pretifyOutput('[POSTGRESS] $error', color: 'red');
 			if(errorFile != null){
-				await log(error, logFile: errorFile);
+				await log(error, logFile: errorFile!);
 			}
 		}
 
@@ -119,7 +119,7 @@ class DB {
 		return part;
 	}
 
-	static dynamic fromDB(Map<String, dynamic> data, {String table, String action}){
+	static dynamic fromDB(Map<String, dynamic> data, {String? table, String? action}){
 
 		if(data['isSuccessful']){
 			if(!data['results'].isEmpty){
