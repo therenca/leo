@@ -128,19 +128,13 @@
       "languageVersion": "2.12"
     },
     {
-      "name": "uuid",
-      "rootUri": "file:///home/therenca/.pub-cache/hosted/pub.dartlang.org/uuid-3.0.6",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
       "name": "leo",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "2.16"
     }
   ],
-  "generated": "2022-04-17T12:35:33.873570Z",
+  "generated": "2022-04-18T11:56:06.270336Z",
   "generator": "pub",
   "generatorVersion": "2.16.2"
 }

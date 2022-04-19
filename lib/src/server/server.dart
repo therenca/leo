@@ -14,7 +14,6 @@ abstract class Server {
 
 	late Map<String, RequestHandler> routes;
 
-	// thoughts
 	// let's have a global middleware utility option
 	// that asserts for expected values on all uris/requests before proceeding
 	Middleware? middleware;
@@ -105,7 +104,7 @@ abstract class Server {
 			}
 
 			default: {
-				mimeType = 'Mimetype Not Set';
+				mimeType = 'Mimetype=$mimeType';
 				break;
 			}
 		}
@@ -171,7 +170,6 @@ abstract class Server {
 			}
 		}
 
-
 		if(backToClient != null){
 			request.response.headers.contentType = ContentType.json;
 			request.response.write(jsonEncode(backToClient));
@@ -183,7 +181,6 @@ abstract class Server {
 				request.response.statusCode = HttpStatus.forbidden;
 			}
 		}
-
 		await request.response.close();
 	}
 }
@@ -195,7 +192,6 @@ abstract class RequestHandler {
 }
 
 abstract class Middleware {
-
 	String? uri;
 	Route? route;
 	dynamic data;
