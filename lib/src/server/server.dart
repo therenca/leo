@@ -24,7 +24,7 @@ abstract class Server {
 	bool https = false;
 
 	Future<void> start() async {
-		await pretifyOutput('$header starting ...', color: color);
+		await pretifyOutput('[$header] starting ...', color: color);
 		var server;
 
 		if(https){
@@ -140,7 +140,7 @@ abstract class Server {
 						}
 
 					} else {
-						pretifyOutput('$header[GET] define request handler for $uri');
+						pretifyOutput('[$header][GET] define request handler for $uri');
 					}
 
 					break;
