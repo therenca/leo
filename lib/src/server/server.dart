@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
+
+import 'batch.dart';
+import 'match_uri.dart';
 import 'http_route.dart';
 import 'package:leo/leo.dart';
 
@@ -51,38 +54,19 @@ abstract class Server {
 		}
 	}
 
-	Future<bool> _handleMiddleware(String uri, RequestHandler handler, [Route? route, dynamic data]) async {
-
-		var isProceed = true;
-		if(handler.middleware != null){
-			for(var index=0; index<handler.middleware!.length; index++){
-				var name = handler.middleware![index].name; 
-				handler.middleware![index].data = data;
-				handler.middleware![index].uri = uri;
-				handler.middleware![index].route = route!;
-				isProceed = await handler.middleware![index].run();
-
-				if(!isProceed){
-					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: 'red');
-					break;
-				}
-			}
-		}
-
-		return isProceed;
-	}
-
 	Future<void> _handleRequests(HttpRequest request) async {
 
+		Batch? batch;
 		var clientData;
 		var uri = request.uri.path;
 		var method = request.method;
 		Route route = request.route();
 		Map<String, dynamic>? backToClient;
 
-		var mimeType;
 		var contentType = request.headers.contentType;
-		mimeType = contentType == null ? '' : contentType.mimeType;
+		var mimeType = contentType == null ? '' : contentType.mimeType;
+
+		var isGloblMiddlewareSuccessful = true; // by default
 
 		switch(mimeType){
 
@@ -112,13 +96,9 @@ abstract class Server {
 		await Log(
 			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
 
-		var uriPattern;
-		var isGloblMiddlewareSuccessful = true; // by default
-		var isMiddlewarePerRequestSuccessful = false; //by default
 
 		if(middleware != null){
 			middleware!.route = route;
-			middleware!.uri = uriPattern;
 			middleware!.data = clientData;
 			isGloblMiddlewareSuccessful = await middleware!.run();
 		}
@@ -126,19 +106,16 @@ abstract class Server {
 		if(isGloblMiddlewareSuccessful){
 			switch(method){
 				case 'GET': {
-					routes.forEach((pattern, _){
-						if(route == GET(pattern)){
-							uriPattern = pattern;
-							return;
-						}
-					});
-					if(uriPattern != null){
-						var requestHandler = routes[uriPattern];
-						isMiddlewarePerRequestSuccessful = await _handleMiddleware(uriPattern, requestHandler!, route, clientData);
-						if(isMiddlewarePerRequestSuccessful){
-							backToClient = await requestHandler.get(route, clientData);
-						}
-
+					var uri = MatchUri.GET(routes, route);
+					if(uri != null){
+						batch = Batch(
+							uri: uri,
+							route: route,
+							routes: routes,
+							method: method,
+							data: clientData,
+						);
+						backToClient = await batch.run();
 					} else {
 						pretifyOutput('[$header][GET] define request handler for $uri');
 					}
@@ -147,20 +124,16 @@ abstract class Server {
 				}
 
 				case 'POST': {
-					routes.forEach((pattern, _){
-						if(route == POST(pattern)){
-							uriPattern = pattern;
-							return;
-						}
-					});
-					if(uriPattern != null){
-
-						var requestHandler = routes[uriPattern];
-						isMiddlewarePerRequestSuccessful = await _handleMiddleware(uriPattern, requestHandler!, route, clientData);
-						if(isMiddlewarePerRequestSuccessful){
-							backToClient = await requestHandler.post(route, clientData);
-						}
-
+					var uri = MatchUri.POST(routes, route);
+					if(uri != null){
+						batch = Batch(
+							uri: uri,
+							route: route,
+							routes: routes,
+							method: method,
+							data: clientData,
+						);
+						backToClient = await batch.run();
 					} else {
 						pretifyOutput('[$header][POST] define request handler for $uri');
 					}
@@ -174,9 +147,11 @@ abstract class Server {
 			request.response.headers.contentType = ContentType.json;
 			request.response.write(jsonEncode(backToClient));
 		} else {
-			if(!isGloblMiddlewareSuccessful || !isMiddlewarePerRequestSuccessful){
+			if(isGloblMiddlewareSuccessful == false || 
+			(batch?.isMiddlewarePerRequestSuccessful ?? false) == false){
 				if(!isGloblMiddlewareSuccessful){
-					await pretifyOutput('[MAIN MIDDLEWARE | ${middleware!.name} | $uriPattern] check failed', color: 'red');
+					await pretifyOutput(
+						'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: 'red');
 				}
 				request.response.statusCode = HttpStatus.forbidden;
 			}
