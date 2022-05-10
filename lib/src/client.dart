@@ -11,18 +11,17 @@ class Client {
 	String serverIp;
 	int serverPort;
 	String path;
-	Map <String, dynamic>? query;
-	late String method;
-	bool isSecured;
 	bool verbose;
+	bool isSecured;
+	Map <String, dynamic>? query;
 	Map<String, String>? headers;
-	late String _now;
-	final int ok = 200;
 	List<int>? expectedStatusCodes; // anticipate successful response
-	String contentType;
 
-	late int _statusCode;
-	late String _uri;
+	String? _now;
+	String? _uri;
+	int? _statusCode;
+	final int ok = 200;
+	String contentType;
 
 	final String header = '[CLIENT]';
 
@@ -45,12 +44,11 @@ class Client {
 		}  else {
 			expectedStatusCodes = [ok];
 		}
-
 		_now = DateTime.now().toString();
 	}
 
-	String get uri => _uri;
-	int get statusCode => _statusCode;
+	String? get uri => _uri;
+	int? get statusCode => _statusCode;
 
 	Uri httpUri (String method){
 		Uri uri;
@@ -75,7 +73,7 @@ class Client {
 		return uri;
 	}
 
-	Future<dynamic> getResponse({String method='POST', Map<String, String>?multipartInfo, Map<String, String>? files}) async {
+	Future<dynamic> getResponse({String method='POST', Map<String, String>? multipartInfo, Map<String, String>? files}) async {
 		
 		String? error;
 		// http.Response response;
@@ -100,33 +98,34 @@ class Client {
 		
 		switch(method){
 			case 'POST': {
-				try {
-					if(multipartInfo != null || files != null){
-						var request = http.MultipartRequest('POST', uri);
-						request.fields.addAll(multipartInfo != null ? multipartInfo : <String, String>{});
-
-						if(files != null){
-							files.forEach((String fileName, String filePath) async {
-								var file = await http.MultipartFile.fromPath(
-									fileName,
-									filePath
-								);
-								request.files.add(file);
-							});
-						}
-
-						response = await request.send();
-						
-					} else {
-
-						response = await http.post(
-							uri,
-							headers: _headers,
-							body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
-						);
+				if(multipartInfo != null || files != null){
+					var request = http.MultipartRequest('POST', uri);
+					_headers[HttpHeaders.contentTypeHeader] = 'multipart/form-data';
+					request.headers.addAll(_headers);
+					request.fields.addAll(multipartInfo != null ? multipartInfo : <String, String>{});
+					if(query != null){
+						Map<String, String> _query = query!.map((key, value) => MapEntry(key, value.toString()));
+						request.fields.addAll(_query);
 					}
-				} catch(e){
-					error = e.toString();
+
+					if(files != null){
+						files.forEach((String fileName, String filePath) async {
+							var file = await http.MultipartFile.fromPath(
+								fileName,
+								filePath
+							);
+							request.files.add(file);
+						});
+					}
+
+					response = await request.send();
+					
+				} else {
+					response = await http.post(
+						uri,
+						headers: _headers,
+						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
+					);
 				}
 
 				break;
@@ -155,6 +154,20 @@ class Client {
 
 				break;
 			}
+
+			case 'DELETE': {
+				try{
+					response = await http.delete(
+						uri,
+						headers: _headers,
+						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
+					);
+				} catch(e){
+					error = e.toString();
+				}
+
+				break;
+			}
 		}
 
 		var bodyStr;
@@ -171,7 +184,7 @@ class Client {
 					pretifyOutput('[$_now][HTTP ERROR] $error', color: 'red');
 					return;
 				} else {
-					pretifyOutput('[$_now][SERVER RESPONSE][${response.statusCode}] $bodyStr');
+					await pretifyOutput('[$_now][SERVER RESPONSE][${response.statusCode}] $bodyStr');
 				}
 			}
 
@@ -189,10 +202,10 @@ class Client {
 		}
 	}
 
-	Future<Uint8List> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double>? controller}) async {
+	Future<Uint8List?> downloadBinary(String filePath, {String method='POST', String size='small', StreamController<double>? controller}) async {
 		var uri;
 		var file;
-		late Uint8List binary;
+		Uint8List? binary;
 		if(isSecured){
 			uri = httpsUri(method);
 		} else {

@@ -5,6 +5,9 @@ import 'batch.dart';
 import 'match_uri.dart';
 import 'http_route.dart';
 import 'package:leo/leo.dart';
+import 'http_body_file_upload.dart';
+import 'http_multipart_form_data.dart';
+import 'package:mime/mime.dart' as mime;
 
 abstract class Server {
 
@@ -28,7 +31,7 @@ abstract class Server {
 
 	Future<void> start() async {
 		await pretifyOutput('[$header] starting ...', color: color);
-		var server;
+		HttpServer server;
 
 		if(https){
 			assert(cert != null);
@@ -49,7 +52,7 @@ abstract class Server {
 			);
 		}
 
-		await for (var request in server){
+		await for (HttpRequest request in server){
 			await _handleRequests(request);
 		}
 	}
@@ -64,10 +67,10 @@ abstract class Server {
 		Map<String, dynamic>? backToClient;
 
 		var contentType = request.headers.contentType;
-		var mimeType = contentType == null ? '' : contentType.mimeType;
+		var mimeType = contentType == null ? 'not set' : contentType.mimeType;
 
 		var isGloblMiddlewareSuccessful = true; // by default
-
+		print('handle: $mimeType');
 		switch(mimeType){
 
 			case 'application/json': {
@@ -78,17 +81,47 @@ abstract class Server {
 			}
 
 			case 'application/x-www-form-urlencoded': {
-
+				var body = await utf8.decoder.bind(request).join();
+				var map = Uri.splitQueryString(body);
+				clientData = {};
+				for (var key in map.keys) {
+					clientData[key] = map[key];
+				}
 				break;
 			}
 
 			case 'multipart/form-data': {
-				clientData = request;
+				var values = await mime.MimeMultipartTransformer(
+            contentType!.parameters['boundary']!)
+        .bind(request)
+        .map((part) =>
+            HttpMultipartFormData.parse(part, defaultEncoding: utf8))
+        .map((multipart) async {
+					dynamic data;
+					if (multipart.isText) {
+						var buffer = await multipart.fold<StringBuffer>(
+								StringBuffer(), (b, s) => b..write(s));
+						data = buffer.toString();
+					} else {
+						var buffer = await multipart.fold<BytesBuilder>(
+								BytesBuilder(), (b, d) => b..add(d as List<int>));
+						data = buffer.takeBytes();
+					}
+					var filename = multipart.contentDisposition.parameters['filename'];
+					if (filename != null) {
+						data = HttpBodyFileUpload(multipart.contentType, filename, data);
+					}
+					return [multipart.contentDisposition.parameters['name'], data];
+				}).toList();
+				var parts = await Future.wait(values);
+				clientData = <String, dynamic>{};
+				for (var part in parts) {
+					clientData[part[0] as String] = part[1]; // Override existing entries.
+				}
 				break;
 			}
 
 			default: {
-				mimeType = 'Mimetype=$mimeType';
 				break;
 			}
 		}

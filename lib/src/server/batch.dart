@@ -9,7 +9,7 @@ class Batch {
 	http_route.Route route;
 	Map<String, server.RequestHandler> routes;
 
-	late bool _isMiddlewarePerRequestSuccessful;
+	bool? _isMiddlewarePerRequestSuccessful;
 
 	Batch({
 		required this.uri,
@@ -19,7 +19,7 @@ class Batch {
 		required this.method,
 	});
 
-	bool get isMiddlewarePerRequestSuccessful => isMiddlewarePerRequestSuccessful;
+	bool? get isMiddlewarePerRequestSuccessful => _isMiddlewarePerRequestSuccessful;
 
 	Future <void> _handleMiddleware() async {
 		var handler = routes[uri]!;
@@ -33,10 +33,10 @@ class Batch {
 				handler.middleware![index].route = route;
 				bool isProceed = await handler.middleware![index].run();
 
-				if(!isProceed){
+				if(isProceed == false){
 					_isMiddlewarePerRequestSuccessful = false;
 					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: 'red');
-					break;
+					return;
 				}
 			}
 		}
@@ -46,7 +46,7 @@ class Batch {
 		Map<String, dynamic>? backToClient;
 		var handler = routes[uri];
 		await _handleMiddleware();
-		if(_isMiddlewarePerRequestSuccessful){
+		if(_isMiddlewarePerRequestSuccessful ?? false){
 			switch(method){
 				case 'GET': {
 					backToClient = await handler!.get(route, data);
