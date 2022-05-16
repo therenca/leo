@@ -120,7 +120,6 @@ class DB {
 	}
 
 	static dynamic fromDB(Map<String, dynamic> data, {String? table, String? action}){
-
 		if(data['isSuccessful']){
 			if(!data['results'].isEmpty){
 				if(data['results'].length > 1){

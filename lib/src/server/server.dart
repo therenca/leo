@@ -70,9 +70,7 @@ abstract class Server {
 		var mimeType = contentType == null ? 'not set' : contentType.mimeType;
 
 		var isGloblMiddlewareSuccessful = true; // by default
-		print('handle: $mimeType');
 		switch(mimeType){
-
 			case 'application/json': {
 				var jsonString = await utf8.decoder.bind(request).join();
 				clientData = jsonDecode(jsonString);
@@ -92,11 +90,11 @@ abstract class Server {
 
 			case 'multipart/form-data': {
 				var values = await mime.MimeMultipartTransformer(
-            contentType!.parameters['boundary']!)
-        .bind(request)
-        .map((part) =>
-            HttpMultipartFormData.parse(part, defaultEncoding: utf8))
-        .map((multipart) async {
+					contentType!.parameters['boundary']!)
+					.bind(request)
+					.map((part) =>
+							HttpMultipartFormData.parse(part, defaultEncoding: utf8))
+					.map((multipart) async {
 					dynamic data;
 					if (multipart.isText) {
 						var buffer = await multipart.fold<StringBuffer>(
