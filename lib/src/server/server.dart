@@ -93,7 +93,7 @@ abstract class Server {
 					contentType!.parameters['boundary']!)
 					.bind(request)
 					.map((part) =>
-							HttpMultipartFormData.parse(part, defaultEncoding: utf8))
+						HttpMultipartFormData.parse(part, defaultEncoding: utf8))
 					.map((multipart) async {
 					dynamic data;
 					if (multipart.isText) {

@@ -30,12 +30,9 @@ Future<dynamic> tryCatch(dynamic callback,
 
 			if(onError is Function){
 				onError();
-			}
-			
-			onError();
+			}	
 		}
 	}
-
 	completer.complete(results);
 	return completer.future;
 }
