@@ -148,7 +148,7 @@ abstract class Server {
 						);
 						backToClient = await batch.run();
 					} else {
-						pretifyOutput('[$header][GET] define request handler for $uri');
+						pretifyOutput('[$header][GET] define request handler for $uri', color: 'red');
 					}
 
 					break;
@@ -166,7 +166,7 @@ abstract class Server {
 						);
 						backToClient = await batch.run();
 					} else {
-						pretifyOutput('[$header][POST] define request handler for $uri');
+						pretifyOutput('[$header][POST] define request handler for $uri', color: 'red');
 					}
 
 					break;

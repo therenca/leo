@@ -5,10 +5,11 @@ import '../log.dart';
 import '../output.dart';
 
 class DB {
+	bool verbose;
 	dynamic _conn;
 	String? errorFile;
 	Map<String, dynamic> auth;
-	DB(this.auth, {this.errorFile}){
+	DB(this.auth, {this.errorFile, this.verbose=false}){
 
 		_conn = PostgreSQLConnection(
 			auth['host'], auth['port'], auth['db'],
@@ -26,6 +27,9 @@ class DB {
 		bool isSuccessful = true;
 
 		try {
+			if(verbose){
+				pretifyOutput('[EXECUTING SQL] $sql');
+			}
 			results = await _conn.mappedResultsQuery(
 				sql, substitutionValues: values
 			);
