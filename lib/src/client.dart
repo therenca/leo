@@ -16,8 +16,6 @@ class Client {
 	Map <String, dynamic>? query;
 	Map<String, String>? headers;
 	List<int>? expectedStatusCodes; // anticipate successful response
-	int timeout;
-	Function? onTimeout;
 
 	String? _now;
 	String? _uri;
@@ -37,8 +35,6 @@ class Client {
 			this.headers,
 			this.expectedStatusCodes,
 			this.contentType='application/json',
-			this.timeout=5000,
-			this.onTimeout
 		}){
 		
 		if(expectedStatusCodes != null){
@@ -77,10 +73,11 @@ class Client {
 		return uri;
 	}
 
-
 	Future<dynamic> getResponse({String method='POST', Map<String, String>? multipartInfo, Map<String, String>? files}) async {
 		
-		Future? responseFuture;
+		String? error;
+		// http.Response response;
+		var response;
 
 		var uri;
 		if(isSecured){
@@ -120,9 +117,11 @@ class Client {
 							request.files.add(file);
 						});
 					}
-					responseFuture = request.send();
+
+					response = await request.send();
+					
 				} else {
-					responseFuture = http.post(
+					response = await http.post(
 						uri,
 						headers: _headers,
 						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
@@ -133,74 +132,73 @@ class Client {
 			}
 
 			case 'GET': {
-				responseFuture = http.get(uri, headers: _headers);
+				
+				try {
+					response = await http.get(uri, headers: _headers);
+				} catch(e){
+					error = e.toString();
+				}
 				break;
 			}
 
 			case 'PUT': {
-				responseFuture = http.put(
-					uri,
-					headers: _headers,
-					body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
-				);
+				try{
+					response = await http.put(
+						uri,
+						headers: _headers,
+						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
+					);
+				} catch(e){
+					error = e.toString();
+				}
+
 				break;
 			}
 
 			case 'DELETE': {
-				responseFuture = http.delete(
-					uri,
-					headers: _headers,
-					body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
-				);
+				try{
+					response = await http.delete(
+						uri,
+						headers: _headers,
+						body: contentType == 'application/x-www-form-urlencoded' ? query : jsonEncode(query),
+					);
+				} catch(e){
+					error = e.toString();
+				}
+
 				break;
 			}
 		}
 
-		FutureOr<http.Response> Function() _onTimeout = (){
-			if(onTimeout != null){
-				onTimeout!();
-			} else {
-				throw TimeoutException('Connection timed out, current timeout is set to $timeout, try increasing the timeout or proof check your internet connection / resource availability. Set a onTimeout callback for such scenarios when creating your aqua.Client object');
-			}
-			return Future.value(http.Response(
-				method,
-				HttpStatus.gatewayTimeout
-			));
-		};
-
 		var bodyStr;
-		Completer<dynamic> completer = Completer();
-		if(responseFuture != null){
+		if(response != null){
 
-			responseFuture.timeout(Duration(milliseconds: timeout), onTimeout: _onTimeout).then((_res) async {
-				if(_res != null){
-					if(_res is http.StreamedResponse){
-						bodyStr = await _res.stream.bytesToString();
-					} else {
-						bodyStr = _res.body;
-					}
+			if(response is http.StreamedResponse){
+				bodyStr = await response.stream.bytesToString();
+			} else {
+				bodyStr = response.body;
+			}
 
-					if(verbose){
-						await pretifyOutput('[$_now][SERVER RESPONSE][${_res.statusCode}] $bodyStr');
-					}
-
-					_statusCode = _res.statusCode;
-					if(expectedStatusCodes!.contains(_statusCode)){
-						// thoughts
-						// we are using contain because the full header could return 
-						// e.g 'application/json; charset=utf-8
-						if(_res.headers['content-type'].contains('application/json')){
-							// return jsonDecode(bodyStr);
-							completer.complete(jsonDecode(bodyStr));
-						} else {
-							completer.complete(bodyStr);
-						}
-					}
+			if(verbose){
+				if(error != null){
+					pretifyOutput('[$_now][HTTP ERROR] $error', color: 'red');
+					return;
 				} else {
-					completer.complete(null);
+					await pretifyOutput('[$_now][SERVER RESPONSE][${response.statusCode}] $bodyStr');
 				}
-			});
-			return completer.future;
+			}
+
+			_statusCode = response.statusCode;
+			if(expectedStatusCodes!.contains(_statusCode)){
+				// thoughts
+				// we are using contain because the full header could return 
+				// e.g 'application/json; charset=utf-8
+				if(response.headers['content-type'].contains('application/json')){
+					return jsonDecode(bodyStr);
+				} else {
+					return bodyStr;
+				}
+			}
 		}
 	}
 
@@ -225,23 +223,30 @@ class Client {
 		}
 
 		switch(size){
+
 			case 'small': {
 				binary =  await response.stream.toBytes();
 				file != null ? await file.writeAsBytes(binary) : file = null;
 				break;
 			}
+
 			case 'large': {
+
 				if(filePath.isNotEmpty){
+
 					var received = 0;
 					var length = response.contentLength;
+					
 					var sink = file.openWrite();
 					List<int> fullBytes = [];
 					await response.stream.map((List<int> bytes){
 						received += bytes.length;
 						fullBytes += bytes;
+
 						if(verbose){
 							pretifyOutput('[DOWNLOAD | $size] $received / $length');
 						}
+
 						if(controller != null){
 							var downloadProgress = received / length!;
 							controller.sink.add(downloadProgress);
@@ -250,15 +255,18 @@ class Client {
 								controller.close();
 							}
 						}
+
 						return bytes;
 					}).pipe(sink);
 
 					sink.close();
 					binary = Uint8List.fromList(fullBytes);
 				}
+
 				break;
 			}
 		}
+
 		return binary;
 	}
 }
