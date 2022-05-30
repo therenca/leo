@@ -226,8 +226,8 @@ class MyServer extends leo.Server {
 
   @override
   final Map<String, leo.RequestHandler> routes = {
-      '/test': Test(), // this RequestHandler is defined below
-      '/ws': Websocket() // this WebSocket is defined below
+    '/test': Test(), // this RequestHandler is defined below
+    '/ws': Websocket() // this WebSocket is defined below
   };
 
 }
@@ -235,54 +235,53 @@ class MyServer extends leo.Server {
 class Test extends leo.RequestHandler {
   @override
   Future<Map<String, dynamic>> get([route, data]) async {
+    // to access get parameters, do this
+    // let's say the get request from the client is
+    // http://localhost/test?key=one
+    
+    // to access the key value
 
-      // to access get parameters, do this
-      // let's say the get request from the client is
-      // http://localhost/test?key=one
-      
-      // to access the key value
+    var key = route.req.uri.queryParameters['key'];
 
-      var key = route.req.uri.queryParameters['key'];
-
-      var backToClient = <String, dynamic>{
-          'isSuccessful': false,
-      };
-      
-      return backToClient;
+    var backToClient = <String, dynamic>{
+        'isSuccessful': false,
+    };
+    
+    return backToClient;
   }
 
   @override
   Future<Map<String, dynamic>> post([route, data]) async {
-      var backToClient = <String, dynamic>{
-          'isSuccessful': false,
-      };
+  var backToClient = <String, dynamic>{
+      'isSuccessful': false,
+  };
 
-      return backToClient;
+  return backToClient;
   }
 }
 
 class Websocket extends leo.Ws {
   @override
   Future<void> onOpen(socket) async {
-      leo.pretifyOutput('socket opened');
+    leo.pretifyOutput('socket opened');
   }
 
   @override
   Future<void> onMessage(socket, data) async {
-      leo.pretifyOutput('message from socket: $data');
-      socket.add('message received: $data');
+    leo.pretifyOutput('message from socket: $data');
+    socket.add('message received: $data');
   }
 
   @override
   Future<void> onClose(socket) async {
-      leo.pretifyOutput('closing socket', color: 'red');
-      await socket.close();
+    leo.pretifyOutput('closing socket', color: 'red');
+    await socket.close();
   }
 
   @override
   Future<void> onError(socket, error) async {
-      leo.pretifyOutput('error occured: $error, closing socket....', color: 'red');
-      await socket.close();
+    leo.pretifyOutput('error occured: $error, closing socket....', color: 'red');
+    await socket.close();
   }
 }
 ```
