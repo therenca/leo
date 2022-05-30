@@ -155,7 +155,7 @@ To output info on screen with different colors
 ```dart
 
 leo.pretifyOutput('to print on screen'); // will print in green
-leo.pretifyOutput('to print on screen', color: 'red');
+leo.pretifyOutput('to print on screen', color: 'red'); // white, red, magenta, yellow, cyan, blue, defaults to green
 ```
 
 To start an isolate
@@ -219,7 +219,7 @@ class MyServer extends leo.Server {
   final int port = 8080;
 
   @override
-  final String color = 'cyan';
+  final String color = 'cyan'; // white, red, magenta, yellow, cyan, blue, defaults to green
 
   @override
   final String logFile = '/path/to/log';
