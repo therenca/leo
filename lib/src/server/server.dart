@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 
 import 'batch.dart';
@@ -61,13 +62,14 @@ abstract class Server {
 
 		Batch? batch;
 		var clientData;
+		bool isWebSocket = false;
 		var uri = request.uri.path;
 		var method = request.method;
 		Route route = request.route();
 		Map<String, dynamic>? backToClient;
 
 		var contentType = request.headers.contentType;
-		var mimeType = contentType == null ? 'not set' : contentType.mimeType;
+		var mimeType = contentType == null ? 'no mimetype set' : contentType.mimeType;
 
 		var isGloblMiddlewareSuccessful = true; // by default
 		switch(mimeType){
@@ -139,18 +141,34 @@ abstract class Server {
 				case 'GET': {
 					var uri = MatchUri.GET(routes, route);
 					if(uri != null){
-						batch = Batch(
-							uri: uri,
-							route: route,
-							routes: routes,
-							method: method,
-							data: clientData,
-						);
-						backToClient = await batch.run();
+						var handler = routes[uri];
+						isWebSocket = _checkForWebSocket(handler);
+						if(isWebSocket == false){
+							batch = Batch(
+								uri: uri,
+								route: route,
+								routes: routes,
+								method: method,
+								data: clientData,
+							);
+							backToClient = await batch.run();
+						} else {
+							var _handler = handler as Ws;
+							WebSocket ws = await WebSocketTransformer.upgrade(request);
+							await _handler.onOpen(ws);
+							ws.listen(
+								(data) async => _handler.onMessage(ws, data),
+								onError: (err) async {
+									_handler.onError(ws, err);
+								},
+								onDone: () async {
+									_handler.onClose(ws);
+								}
+							);
+						}
 					} else {
 						pretifyOutput('[$header][GET] define request handler for $uri', color: 'red');
 					}
-
 					break;
 				}
 
@@ -174,21 +192,25 @@ abstract class Server {
 			}
 		}
 
-		if(backToClient != null){
-			request.response.headers.contentType = ContentType.json;
-			request.response.write(jsonEncode(backToClient));
-		} else {
-			if(isGloblMiddlewareSuccessful == false || 
-			(batch?.isMiddlewarePerRequestSuccessful ?? false) == false){
-				if(!isGloblMiddlewareSuccessful){
-					await pretifyOutput(
-						'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: 'red');
+		if(isWebSocket == false){
+			if(backToClient != null){
+				request.response.headers.contentType = ContentType.json;
+				request.response.write(jsonEncode(backToClient));
+			} else {
+				if(isGloblMiddlewareSuccessful == false || 
+				(batch?.isMiddlewarePerRequestSuccessful ?? false) == false){
+					if(!isGloblMiddlewareSuccessful){
+						await pretifyOutput(
+							'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: 'red');
+					}
+					request.response.statusCode = HttpStatus.forbidden;
 				}
-				request.response.statusCode = HttpStatus.forbidden;
 			}
+			await request.response.close();	
 		}
-		await request.response.close();
 	}
+
+	bool _checkForWebSocket(RequestHandler? handler) => handler is Ws;
 }
 
 abstract class RequestHandler {
@@ -197,10 +219,23 @@ abstract class RequestHandler {
 	Future<Map<String, dynamic>> post(Route route, [dynamic data]);
 }
 
+// we are extending RequestHandler to promote uniformity when structuring the server
+abstract class Ws extends RequestHandler {
+	@override // no use for get
+	Future<Map<String, dynamic>> get(Route route, [data]) async => <String, dynamic>{};
+	@override // no use for post
+	Future<Map<String, dynamic>> post(Route route, [data]) async => <String, dynamic>{};
+
+	Future<void> onOpen(WebSocket socket);
+	Future<void> onClose(WebSocket socket);
+	Future<void> onMessage(WebSocket socket, data);
+	Future<void> onError(WebSocket socket, error);
+}
+
 abstract class Middleware {
 	String? uri;
-	Route? route;
 	dynamic data;
+	Route? route;
 	String name = 'Middleware (Set unique name for middleware)';
 
 	Future<bool> run();
