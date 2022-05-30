@@ -234,7 +234,7 @@ class MyServer extends leo.Server {
 
 class Test extends leo.RequestHandler {
   @override
-  Future<Map<String, dynamic>> Get([route, data]) async {
+  Future<Map<String, dynamic>> get([route, data]) async {
 
       // to access get parameters, do this
       // let's say the get request from the client is
@@ -252,7 +252,7 @@ class Test extends leo.RequestHandler {
   }
 
   @override
-  Future<Map<String, dynamic>> Post([route, data]) async {
+  Future<Map<String, dynamic>> post([route, data]) async {
       var backToClient = <String, dynamic>{
           'isSuccessful': false,
       };

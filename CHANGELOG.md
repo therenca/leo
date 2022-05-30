@@ -23,3 +23,6 @@
 
 ### 1.0.4+4
 - added checks for content type
+### 1.0.4+6
+- added websockets
+- check readme for updated usage of this library
