@@ -178,7 +178,7 @@ var workload = [
 ];
 
 var howManyParts = 3;
-var workloadListing = leo.fractionate(workload, howManyParts);
+var workloadListing = leo.Fractionate.generate(workload, howManyParts);
 ```
 
 To create a file quickly (will also create the recursive directories on the path)
@@ -213,13 +213,13 @@ class MyServer extends leo.Server {
 
 	@override
 	final Map<String, leo.RequestHandler> routes = {
-		'/test': Test(), // this Test is defined below
+		'/test': Test(), // this RequestHandler is defined below
+		'/ws': Websocket() // this WebSocket is defined below
 	};
 
 }
 
 class Test extends leo.RequestHandler {
-
 	@override
 	Future<Map<String, dynamic>> Get([route, data]) async {
 
@@ -246,6 +246,30 @@ class Test extends leo.RequestHandler {
 
 		return backToClient;
 	}
+}
 
+class Websocket extends leo.Ws {
+	@override
+	Future<void> onOpen(socket) async {
+		leo.pretifyOutput('socket added');
+	}
+
+	@override
+	Future<void> onMessage(socket, data) async {
+		leo.pretifyOutput('message from socket: $data');
+		socket.add('message received: $data');
+	}
+
+	@override
+	Future<void> onClose(socket) async {
+		leo.pretifyOutput('closing socket', color: 'red');
+		await socket.close();
+	}
+
+	@override
+	Future<void> onError(socket, error) async {
+		await leo.pretifyOutput('error occured: $error, closing socket....', color: 'red');
+		await socket.close();
+	}
 }
 ```
