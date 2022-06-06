@@ -17,9 +17,9 @@ Future<void> Log(String uri, String method, {String? header, HttpRequest? reques
 	}
 	var now = DateTime.now().toIso8601String();
 
-	await pretifyOutput('[$now][$ipAddress]$header[$method][$mimetype]', endLine: '', color: 'yellow');
-	await pretifyOutput('[$uri]', endLine: '', color: 'cyan');
-	await pretifyOutput(' <== ', endLine: '', color: 'yellow');
+	await pretifyOutput('[$now][$ipAddress]$header[$method][$mimetype]', endLine: '', color: Color.yellow);
+	await pretifyOutput('[$uri]', endLine: '', color: Color.cyann);
+	await pretifyOutput(' <== ', endLine: '', color: Color.yellow);
 	await pretifyOutput('$data');
 
 	if(logFile != null){

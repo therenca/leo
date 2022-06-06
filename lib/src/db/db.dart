@@ -38,7 +38,7 @@ class DB {
 			results = [];
 			isSuccessful = false;
 
-			pretifyOutput('[POSTGRESS] $error', color: 'red');
+			pretifyOutput('[POSTGRESS] $error', color: Color.red);
 			if(errorFile != null){
 				await log(error, logFile: errorFile!);
 			}

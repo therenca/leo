@@ -5,8 +5,8 @@ import 'log.dart';
 
 Future<void> pretifyOutput(String info,
 	{
-		String color='', 
-		String bgColor='',
+		Color color=Color.green, 
+		Color? bgColor,
 		String? path,
 		bool clear=false,
 		String? endLine,
@@ -15,34 +15,38 @@ Future<void> pretifyOutput(String info,
 	Colorize toPretify = Colorize(info);
 
 	switch(color){
-
-		case 'white': {
+		case Color.white: {
 			toPretify.white();
 			break;
 		}
 
-		case 'red': {
+		case Color.red: {
 			toPretify.red();
 			break;
 		}
 
-		case 'yellow': {
+		case Color.yellow: {
 			toPretify.yellow();
 			break;
 		}
 
-		case 'magenta': {
+		case Color.magenta: {
 			toPretify.magenta();
 			break;
 		}
 
-		case 'cyan': {
+		case Color.cyann: {
 			toPretify.cyan();
 			break;
 		}
 
-		case 'blue': {
+		case Color.blue: {
 			toPretify.blue();
+			break;
+		}
+
+		case Color.green: {
+			toPretify.green();
 			break;
 		}
 
@@ -52,37 +56,40 @@ Future<void> pretifyOutput(String info,
 		}
 	}
 
-	if(bgColor.isNotEmpty){
-
+	if(bgColor != null){
 		switch(bgColor){
-
-			case 'white': {
+			case Color.white: {
 				toPretify.bgWhite();
 				break;
 			}
 
-			case 'red': {
+			case Color.red: {
 				toPretify.bgRed();
 				break;
 			}
 
-			case 'yellow': {
+			case Color.yellow: {
 				toPretify.bgYellow();
 				break;
 			}
 
-			case 'magenta': {
+			case Color.magenta: {
 				toPretify.bgMagenta();
 				break;
 			}
 
-			case 'cyan': {
+			case Color.cyann: {
 				toPretify.bgCyan();
 				break;
 			}
 
-			case 'blue': {
+			case Color.blue: {
 				toPretify.bgBlue();
+				break;
+			}
+
+			case Color.green: {
+				toPretify.bgGreen();
 				break;
 			}
 		}
@@ -95,4 +102,14 @@ Future<void> pretifyOutput(String info,
 	if(path != null){
 		await log(info, logFile: path, clear: clear);
 	}
+}
+
+enum Color {
+	green,
+	white,
+	red,
+	yellow,
+	magenta,
+	cyann,
+	blue
 }

@@ -35,7 +35,7 @@ class Batch {
 
 				if(isProceed == false){
 					_isMiddlewarePerRequestSuccessful = false;
-					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: 'red');
+					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: Color.red);
 					return;
 				}
 			}

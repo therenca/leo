@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'package:collection/collection.dart';
 
 import 'batch.dart';
 import 'match_uri.dart';
@@ -16,7 +17,7 @@ abstract class Server {
 	String ip = 'localhost';
 
 	String? logFile;
-	String color = 'cyan';
+	Color color = Color.cyann;
 	String header = 'server';
 
 	late Map<String, RequestHandler> routes;
@@ -167,7 +168,7 @@ abstract class Server {
 							);
 						}
 					} else {
-						pretifyOutput('[$header][GET] define request handler for $uri', color: 'red');
+						pretifyOutput('[$header][GET] define request handler for $uri', color: Color.red);
 					}
 					break;
 				}
@@ -184,7 +185,7 @@ abstract class Server {
 						);
 						backToClient = await batch.run();
 					} else {
-						pretifyOutput('[$header][POST] define request handler for $uri', color: 'red');
+						pretifyOutput('[$header][POST] define request handler for $uri', color: Color.red);
 					}
 
 					break;
@@ -201,7 +202,7 @@ abstract class Server {
 				(batch?.isMiddlewarePerRequestSuccessful ?? false) == false){
 					if(!isGloblMiddlewareSuccessful){
 						await pretifyOutput(
-							'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: 'red');
+							'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: Color.red);
 					}
 					request.response.statusCode = HttpStatus.forbidden;
 				}
@@ -219,6 +220,16 @@ abstract class RequestHandler {
 	Future<Map<String, dynamic>> post(Route route, [dynamic data]);
 }
 
+
+abstract class Middleware {
+	String? uri;
+	dynamic data;
+	Route? route;
+	String name = 'Middleware (Set unique name for middleware)';
+
+	Future<bool> run();
+}
+
 // we are extending RequestHandler to promote uniformity when structuring the server
 abstract class Ws extends RequestHandler {
 	@override // no use for get
@@ -232,11 +243,40 @@ abstract class Ws extends RequestHandler {
 	Future<void> onError(WebSocket socket, error);
 }
 
-abstract class Middleware {
-	String? uri;
-	dynamic data;
-	Route? route;
-	String name = 'Middleware (Set unique name for middleware)';
+class WsClients {
+	List<WebSocket> _namelessClients = [];
+	Map<String, WebSocket> _namedClients = {};
 
-	Future<bool> run();
+	List<WebSocket> get namelessClient => _namelessClients;
+	Map<String, WebSocket> get namedClients => _namedClients;
+
+	WebSocket? getNamedClient(String id) => _namedClients[id];
+	WebSocket? getNamelessClient(socket) => _namelessClients.firstWhereOrNull((sock) => socket == sock);
+
+	void addNamelessClient(WebSocket socket){
+		_namelessClients.add(socket);
+	}
+	void removeNamelessClient(WebSocket socket){
+		_namelessClients.remove(socket);
+	}
+	void markClient(String id, WebSocket socket){
+		_namedClients[id] = socket;
+		removeNamelessClient(socket);
+	}
+	void removeNamedClient(WebSocket socket){
+		String? id;
+		_namedClients.forEach((_id, sock) {
+			if(socket == sock){
+				id = _id;
+				return;
+			}
+		});
+		if(id != null){
+			_namedClients.remove(id);
+		}
+	}
+	void close(WebSocket socket){
+		removeNamelessClient(socket);
+		removeNamedClient(socket);
+	}
 }
