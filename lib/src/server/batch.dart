@@ -7,6 +7,7 @@ class Batch {
 	dynamic data;
 	String method;
 	http_route.Route route;
+	bool verbose;
 	Map<String, server.RequestHandler> routes;
 
 	bool? _isMiddlewarePerRequestSuccessful;
@@ -17,6 +18,7 @@ class Batch {
 		required this.route,
 		required this.routes,
 		required this.method,
+		required this.verbose,
 	});
 
 	bool? get isMiddlewarePerRequestSuccessful => _isMiddlewarePerRequestSuccessful;
@@ -35,7 +37,9 @@ class Batch {
 
 				if(isProceed == false){
 					_isMiddlewarePerRequestSuccessful = false;
-					await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: Color.red);
+					if(verbose){
+						await pretifyOutput('[MIDDLEWARE PER REQUEST | $name | $uri] check failed', color: Color.red);
+					}
 					return;
 				}
 			}

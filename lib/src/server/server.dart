@@ -19,6 +19,7 @@ abstract class Server {
 	String? logFile;
 	Color color = Color.cyann;
 	String header = 'server';
+	bool verbose = false;
 
 	late Map<String, RequestHandler> routes;
 
@@ -32,7 +33,9 @@ abstract class Server {
 	bool https = false;
 
 	Future<void> start() async {
-		await pretifyOutput('[$header] starting ...', color: color);
+		if(verbose){
+			await pretifyOutput('[$header] starting ...', color: color);
+		}
 		HttpServer server;
 
 		if(https){
@@ -127,9 +130,10 @@ abstract class Server {
 			}
 		}
 
-		await Log(
-			uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
-
+		if(verbose){
+			await Log(
+				uri, method, header: header, request: request, mimetype: mimeType, data: clientData, logFile: logFile);
+		}
 
 		if(middleware != null){
 			middleware!.route = route;
@@ -151,24 +155,19 @@ abstract class Server {
 								routes: routes,
 								method: method,
 								data: clientData,
+								verbose: verbose
 							);
 							backToClient = await batch.run();
 						} else {
 							var _handler = handler as Ws;
 							WebSocket ws = await WebSocketTransformer.upgrade(request);
+							ws.pingInterval = Duration(seconds: _handler.pingInterval);
 							await _handler.onOpen(ws);
-							ws.listen(
-								(data) async => _handler.onMessage(ws, data),
-								onError: (err) async {
-									_handler.onError(ws, err);
-								},
-								onDone: () async {
-									_handler.onClose(ws);
-								}
-							);
 						}
 					} else {
-						pretifyOutput('[$header][GET] define request handler for $uri', color: Color.red);
+						if(verbose){
+							pretifyOutput('[$header][GET] define request handler for $uri', color: Color.red);
+						}
 					}
 					break;
 				}
@@ -182,10 +181,13 @@ abstract class Server {
 							routes: routes,
 							method: method,
 							data: clientData,
+							verbose: verbose
 						);
 						backToClient = await batch.run();
 					} else {
-						pretifyOutput('[$header][POST] define request handler for $uri', color: Color.red);
+						if(verbose){
+							pretifyOutput('[$header][POST] define request handler for $uri', color: Color.red);
+						}
 					}
 
 					break;
@@ -201,8 +203,10 @@ abstract class Server {
 				if(isGloblMiddlewareSuccessful == false || 
 				(batch?.isMiddlewarePerRequestSuccessful ?? false) == false){
 					if(!isGloblMiddlewareSuccessful){
-						await pretifyOutput(
-							'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: Color.red);
+						if(verbose){
+							await pretifyOutput(
+								'[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed', color: Color.red);
+						}
 					}
 					request.response.statusCode = HttpStatus.forbidden;
 				}
@@ -232,11 +236,12 @@ abstract class Middleware {
 
 // we are extending RequestHandler to promote uniformity when structuring the server
 abstract class Ws extends RequestHandler {
-	@override // no use for get
+	@override /// no use for get
 	Future<Map<String, dynamic>> get(Route route, [data]) async => <String, dynamic>{};
-	@override // no use for post
+	@override /// no use for post
 	Future<Map<String, dynamic>> post(Route route, [data]) async => <String, dynamic>{};
-
+	///in seconds
+	int pingInterval = 10; 
 	Future<void> onOpen(WebSocket socket);
 	Future<void> onClose(WebSocket socket);
 	Future<void> onMessage(WebSocket socket, data);
@@ -247,7 +252,7 @@ class WsClients {
 	List<WebSocket> _namelessClients = [];
 	Map<String, WebSocket> _namedClients = {};
 
-	List<WebSocket> get namelessClient => _namelessClients;
+	List<WebSocket> get namelessClients => _namelessClients;
 	Map<String, WebSocket> get namedClients => _namedClients;
 
 	WebSocket? getNamedClient(String id) => _namedClients[id];
@@ -275,7 +280,7 @@ class WsClients {
 			_namedClients.remove(id);
 		}
 	}
-	void close(WebSocket socket){
+	void remove(WebSocket socket){
 		removeNamelessClient(socket);
 		removeNamedClient(socket);
 	}
