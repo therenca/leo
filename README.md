@@ -244,7 +244,7 @@ class TestHandler extends leo.RequestHandler {
     var key = route.req.uri.queryParameters['key'];
 
     var backToClient = <String, dynamic>{
-        'isSuccessful': false,
+      'isSuccessful': false,
     };
     
     return backToClient;
@@ -253,7 +253,7 @@ class TestHandler extends leo.RequestHandler {
   @override
   Future<Map<String, dynamic>> post([route, data]) async {
   var backToClient = <String, dynamic>{
-      'isSuccessful': false,
+    'isSuccessful': false,
   };
 
   return backToClient;
@@ -262,54 +262,54 @@ class TestHandler extends leo.RequestHandler {
 
 class WebsocketHandler extends leo.Ws {
   /// an instance to store clients for this particluar handler
-	leo.WsClients clients;
+  leo.WsClients clients;
 
-	WebsocketHandler({
-		required this.clients
-	});
+  WebsocketHandler({
+    required this.clients
+  });
 
-	@override
-	int pingInterval = 10;
+  @override
+  int pingInterval = 10;
 
-	@override
-	Future<void> onOpen(socket) async {
-		clients.addNamelessClient(socket);
-		socket.add('connection opened successfully');
-		socket.listen((data) async {
-			await onMessage(socket, data);
-		},
-		onDone: () async  => await onClose(socket),
-		onError: (error) async => await onError(socket, error));
-	}
+  @override
+  Future<void> onOpen(socket) async {
+    clients.addNamelessClient(socket);
+    socket.add('connection opened successfully');
+    socket.listen((data) async {
+        await onMessage(socket, data);
+    },
+    onDone: () async  => await onClose(socket),
+    onError: (error) async => await onError(socket, error));
+  }
 
-	@override
-	Future<void> onMessage(socket, data) async {
-		leo.pretifyOutput('message from socket: $data');
+  @override
+  Future<void> onMessage(socket, data) async {
+    leo.pretifyOutput('message from socket: $data');
 
-		switch(data['type']){
-			case 'identification': {
-				clients.markClient(data['id'], socket);
-				socket.add('socket identified');
-				break;
-			}
-		}
-	}
+    switch(data['type']){
+      case 'identification': {
+        clients.markClient(data['id'], socket);
+        socket.add('socket identified');
+        break;
+      }
+    }
+  }
 
-	@override
-	Future<void> onClose(socket) async {
-		leo.pretifyOutput('closing socket ... ', color: leo.Color.red);
-		clients.remove(socket);
-		leo.pretifyOutput('remaining nameless sockets: ${clients.namelessClients.length}', color: leo.Color.red);
+  @override
+  Future<void> onClose(socket) async {
+    leo.pretifyOutput('closing socket ... ', color: leo.Color.red);
+    clients.remove(socket);
+    leo.pretifyOutput('remaining nameless sockets: ${clients.namelessClients.length}', color: leo.Color.red);
     leo.pretifyOutput('remaining named sockets: ${clients.namedClients.length}', color: leo.Color.red);
-		await socket.close();
-	}
+    await socket.close();
+  }
 
-	@override
-	Future<void> onError(socket, error) async {
-		leo.pretifyOutput('error occured: $error, closing socket....', color: leo.Color.red);
-		clients.remove(socket);
-		await socket.close();
-	}
+  @override
+  Future<void> onError(socket, error) async {
+    leo.pretifyOutput('error occured: $error, closing socket....', color: leo.Color.red);
+    clients.remove(socket);
+    await socket.close();
+  }
 }
 ```
 
