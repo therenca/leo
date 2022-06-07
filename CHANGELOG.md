@@ -26,3 +26,7 @@
 ### 1.0.4+6
 - added websockets
 - check readme for updated usage of this library
+
+### 1.0.4+7
+- updated websockets
+- added Color.enum

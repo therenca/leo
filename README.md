@@ -226,13 +226,13 @@ class MyServer extends leo.Server {
 
   @override
   final Map<String, leo.RequestHandler> routes = {
-    '/test': Test(), // this RequestHandler is defined below
-    '/ws': Websocket() // this WebSocket is defined below
+    '/test': TestHandler(), // this RequestHandler is defined below
+    '/ws': WebsocketHandler() // this WebSocket is defined below
   };
 
 }
 
-class Test extends leo.RequestHandler {
+class TestHandler extends leo.RequestHandler {
   @override
   Future<Map<String, dynamic>> get([route, data]) async {
     // to access get parameters, do this
@@ -260,28 +260,69 @@ class Test extends leo.RequestHandler {
   }
 }
 
-class Websocket extends leo.Ws {
-  @override
-  Future<void> onOpen(socket) async {
-    leo.pretifyOutput('socket opened');
-  }
+class WebsocketHandler extends leo.Ws {
+  /// an instance to store clients for this particluar handler
+	leo.WsClients clients;
 
-  @override
-  Future<void> onMessage(socket, data) async {
-    leo.pretifyOutput('message from socket: $data');
-    socket.add('message received: $data');
-  }
+	WebsocketHandler({
+		required this.clients
+	});
 
-  @override
-  Future<void> onClose(socket) async {
-    leo.pretifyOutput('closing socket', color: 'red');
-    await socket.close();
-  }
+	@override
+	int pingInterval = 10;
 
-  @override
-  Future<void> onError(socket, error) async {
-    leo.pretifyOutput('error occured: $error, closing socket....', color: 'red');
-    await socket.close();
-  }
+	@override
+	Future<void> onOpen(socket) async {
+		clients.addNamelessClient(socket);
+		socket.add('connection opened successfully');
+		socket.listen((data) async {
+			await onMessage(socket, data);
+		},
+		onDone: () async  => await onClose(socket),
+		onError: (error) async => await onError(socket, error));
+	}
+
+	@override
+	Future<void> onMessage(socket, data) async {
+		leo.pretifyOutput('message from socket: $data');
+
+		switch(data['type']){
+			case 'identification': {
+				clients.markClient(data['id'], socket);
+				socket.add('socket identified');
+				break;
+			}
+		}
+	}
+
+	@override
+	Future<void> onClose(socket) async {
+		leo.pretifyOutput('closing socket ... ', color: leo.Color.red);
+		clients.remove(socket);
+		leo.pretifyOutput('remaining nameless sockets: ${clients.namelessClients.length}', color: leo.Color.red);
+    leo.pretifyOutput('remaining named sockets: ${clients.namedClients.length}', color: leo.Color.red);
+		await socket.close();
+	}
+
+	@override
+	Future<void> onError(socket, error) async {
+		leo.pretifyOutput('error occured: $error, closing socket....', color: leo.Color.red);
+		clients.remove(socket);
+		await socket.close();
+	}
+}
+```
+
+Where `leo.WsClients clients` instance has already been instantiated at the root of the server as shown below
+```dart
+var testClients = leo.WsClients();
+class MyServer extends leo.Server {
+ /// server setup
+ /// some code
+ /// 
+ @override
+  final Map<String, leo.RequestHandler> routes = {
+    '/ws': WebsocketHandler(clients: testClients) // this WebSocket is defined below
+  };
 }
 ```
