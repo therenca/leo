@@ -12,7 +12,7 @@ class ORM {
 			sql = sql + ' RETURNING *';
 		}
 		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values, identifier: table);
-		if(fromDB['isSuccessful'] && isReturning == true){
+		if(isReturning == true){
 			return DB.fromDB(fromDB, table: table).first;
 		} else {
 			return fromDB['isSuccessful'];
