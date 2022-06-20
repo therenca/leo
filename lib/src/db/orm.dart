@@ -13,7 +13,7 @@ class ORM {
 		}
 		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values, identifier: table);
 		if(isReturning == true){
-			return DB.fromDB(fromDB, table: table).first;
+			return fromDB['isSuccessful'] ? DB.fromDB(fromDB, table: table).first : null;
 		} else {
 			return fromDB['isSuccessful'];
 		}
