@@ -88,7 +88,7 @@ var data = {
   'lastname': 'doe'
 };
 
-var isInserted = await leo.ORM(dbAuth).insert(table, data);
+Map<String, dynamic>insertedDoc = await leo.ORM(dbAuth).insert(table, data);
 ```
 
 ```dart
@@ -101,7 +101,7 @@ var whereClause = <String, dynamic>{
   'id': 1,
 };
 
-var isUpdated = await leo.ORM(dbAuth).update(table, toChange, whereClause);
+Map<String, dynamic>updatedDoc = await leo.ORM(dbAuth).update(table, toChange, whereClause);
 ```
 
 ```dart
