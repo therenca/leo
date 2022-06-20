@@ -24,6 +24,6 @@ Future<void> Log(String uri, String method, {String? header, HttpRequest? reques
 
 	if(logFile != null){
 		var toLog = '[$now][$ipAddress]$header[$method][$uri] <== $data';
-		await log.log(toLog, logFile: logFile, time: false);
+		await log.log(toLog, logFile, time: false);
 	}
 }

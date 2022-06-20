@@ -100,7 +100,7 @@ Future<void> pretifyOutput(String info,
 	// print('$toPretify$end');
 
 	if(path != null){
-		await log(info, logFile: path, clear: clear);
+		await log(info, path, clear: clear);
 	}
 }
 

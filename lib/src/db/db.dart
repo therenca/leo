@@ -6,7 +6,7 @@ import '../output.dart';
 
 class DB {
 	bool verbose;
-	dynamic _conn;
+	late PostgreSQLConnection _conn;
 	String? errorFile;
 	Map<String, dynamic> auth;
 	DB(this.auth, {this.errorFile, this.verbose=false}){
@@ -24,23 +24,29 @@ class DB {
 		await _conn.open();
 
 		List<dynamic> results;
-		bool isSuccessful = true;
+		bool isSuccessful = false;
 
 		try {
 			if(verbose){
-				pretifyOutput('[EXECUTING SQL] $sql');
+				pretifyOutput('[EXECUTING SQL]', color: Color.cyann, endLine: '');
+				pretifyOutput(sql);
 			}
 			results = await _conn.mappedResultsQuery(
 				sql, substitutionValues: values
 			);
+			if(verbose){
+				pretifyOutput('[RESULTS]', color: Color.cyann, endLine: '');
+				pretifyOutput('$results');
+			}
+			isSuccessful = true;
 		} catch(e){
-			var error = '$identifier: ${e.toString()}';
 			results = [];
-			isSuccessful = false;
-
-			pretifyOutput('[POSTGRESS] $error', color: Color.red);
+			var error = '${identifier ?? '--'}: ${e.toString()}';
+			pretifyOutput('[POSTGRESS]', color: Color.cyann, endLine: '');
+			pretifyOutput('[ERROR]', color: Color.red, endLine: '');
+			pretifyOutput('$error', color: Color.yellow);
 			if(errorFile != null){
-				await log(error, logFile: errorFile!);
+				await log(error, errorFile!);
 			}
 		}
 
@@ -125,7 +131,7 @@ class DB {
 
 	static dynamic fromDB(Map<String, dynamic> data, {String? table, String? action}){
 		if(data['isSuccessful']){
-			if(!data['results'].isEmpty){
+			if(data['results'].isNotEmpty){
 				if(data['results'].length > 1){
 					return data['results'].map((row){
 						return row[table];
@@ -136,17 +142,13 @@ class DB {
 						// thoughts
 						// count sql command only returns one result, without a table
 						// {results: [{: {count: 0}}], isSuccessful: true}
-
 						var parsed;
 						switch(action){
-
 							case 'count': {
 								parsed = data['results'].first['']['count'];
 							}
 						}
-						
 						return parsed;
-
 					} else {
 						return formatted;
 					}

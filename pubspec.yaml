@@ -1,6 +1,6 @@
 name: leo
 description: A set of general utilities for the server
-version: 1.0.4+6
+version: 1.0.4+7
 homepage: 'https://github.com/therenca/leo'
 
 environment:
@@ -12,3 +12,4 @@ dependencies:
   http: ^0.13.4
   intl: ^0.17.0
   mime: ^1.0.2
+  collection: ^1.16.0

@@ -7,18 +7,20 @@ class ORM {
 
 	ORM(this.auth, {this.verbose=false});
 
-	Future<bool> _run(sql, [Map<String, dynamic>?values, String? table]) async {
-		if(verbose){
-			pretifyOutput('[SQL] $sql');
+	Future<dynamic> _run(sql, [Map<String, dynamic>?values, String? table, bool? isReturning]) async {
+		if(isReturning == true){
+			sql = sql + ' RETURNING *';
 		}
-
-		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
-		return fromDB['isSuccessful'];
+		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values, identifier: table);
+		if(fromDB['isSuccessful'] && isReturning == true){
+			return DB.fromDB(fromDB, table: table).first;
+		} else {
+			return fromDB['isSuccessful'];
+		}
 	}
 
 	Future<dynamic> get(
-		String table, String column, {Map<String, dynamic>? values}) async {
-		
+		String table, String column, {Map<String, dynamic>? values}) async {	
 		values == null ? values = <String, dynamic>{} : values = values; 
 		String whereClause = DB.getWhereClause(values);
 
@@ -37,8 +39,7 @@ class ORM {
 		return DB.fromDB(fromDB, table: table);
 	}
 
-	Future<bool> insert(String table, Map<String, dynamic> values) async {
-
+	Future<Map<String, dynamic>?> insert(String table, Map<String, dynamic> values) async {
 		String valuesF = '';
 		String columns = '';
 
@@ -61,11 +62,10 @@ class ORM {
 		});
 
 		var sql = 'INSERT INTO $table ($columns) values($valuesF)';
-		
-		return await _run(sql, values, table);
+		return await _run(sql, values, table, true) as Map<String, dynamic>?;
 	}
 
-	Future<bool> update(
+	Future<Map<String, dynamic>?> update(
 		String table, Map<String, dynamic> change, Map<String, dynamic> values) async {
 
 		String whereClause = DB.getWhereClause(values);
@@ -73,12 +73,10 @@ class ORM {
 		var sql = 'UPDATE $table $updateClause $whereClause';
 
 		values.addAll(change);
-
-		return await _run(sql, values, table);
+		return await _run(sql, values, table, true) as Map<String, dynamic>?;
 	}
 
 	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String? command}) async {
-
 		String sql = 'ALTER TABLE $table ';
 		var subSql = '$command COLUMN ';
 		var thresholdX = columns.length - 1;
@@ -88,48 +86,38 @@ class ORM {
 			var column = columns[index];
 			var columnName = column['name'];
 			switch(command){
-
 				case 'ADD': {
-
 					var constraints = '';
 					String dataType = column['type'];
 					List<String>? constraintListing = column['constraints'];
 					if(constraintListing != null){
 						constraints = DB.getConstraints(constraintListing);
 					}
-
 					if(constraints.isNotEmpty){
 						tempSql += '$columnName $dataType ' + constraints;
 					} else {
 						tempSql += '$columnName $dataType';
 					}
-
 					if(index < thresholdX){
-						tempSql += ','; 
+						tempSql += ',';
 					}
-
 					sql += tempSql;
-
 					break;
 				}
 
 				case 'DROP': {
-
 					tempSql += ' $columnName';
-
 					if(index < thresholdX){
 						tempSql += ','; 
 					}
-
 					sql += tempSql; 
-
 					break;
 				}
 
 			}
 		}
 
-		return _run(sql, <String, dynamic>{}, table);
+		return await _run(sql, <String, dynamic>{}, table, false) as bool;
 	}
 
 	Future<int> count(String table, {Map<String, dynamic>? values}) async {
@@ -155,12 +143,12 @@ class ORM {
 
 		String whereClause = DB.getWhereClause(values);
 		var sql = 'DELETE FROM $table $whereClause';
-		return await _run(sql, values, table);
+		return await _run(sql, values, table, false) as bool;
 
 	}
 
 	Future<bool> clear(String table) async {
 		var sql = 'TRUNCATE TABLE $table';
-		return await _run(sql, <String, dynamic>{}, table);
+		return await _run(sql, <String, dynamic>{}, table, false) as bool;
 	}
 }
