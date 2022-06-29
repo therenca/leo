@@ -30,3 +30,6 @@
 ### 1.0.4+7
 - updated websockets
 - added Color.enum
+
+### 1.0.4+8
+- updated leo.Client, timeout optional

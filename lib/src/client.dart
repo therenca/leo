@@ -16,7 +16,7 @@ class Client {
 	Map <String, dynamic>? query;
 	Map<String, String>? headers;
 	List<int>? expectedStatusCodes; // anticipate successful response
-	int timeout;
+	int? timeout;
 	Function? onTimeout;
 
 	String? _now;
@@ -37,7 +37,7 @@ class Client {
 			this.headers,
 			this.expectedStatusCodes,
 			this.contentType='application/json',
-			this.timeout=5000,
+			this.timeout,
 			this.onTimeout
 		}){
 		
@@ -187,7 +187,10 @@ class Client {
 		var bodyStr;
 		Completer<dynamic> completer = Completer();
 		if(responseFuture != null){
-			responseFuture.timeout(Duration(milliseconds: timeout), onTimeout: isStreamedResponse ? _onTimeoutStreamedResponse : _onTimeoutResponse).then((_res) async {
+			if(timeout != null){
+				responseFuture.timeout(Duration(milliseconds: timeout!), onTimeout: isStreamedResponse ? _onTimeoutStreamedResponse : _onTimeoutResponse);
+			}
+			responseFuture.then((_res) async {
 				if(_res != null){
 					if(_res is http.StreamedResponse){
 						bodyStr = await _res.stream.bytesToString();

@@ -249,6 +249,8 @@ abstract class Ws extends RequestHandler {
 }
 
 class WsClients {
+	bool? verbose;
+	WsClients({this.verbose=false});
 	List<WebSocket> _namelessClients = [];
 	Map<String, WebSocket> _namedClients = {};
 
@@ -260,6 +262,9 @@ class WsClients {
 
 	void addNamelessClient(WebSocket socket){
 		_namelessClients.add(socket);
+		if(verbose ?? false){
+			pretifyOutput('[ws] socket added', color: Color.magenta);
+		}
 	}
 	void removeNamelessClient(WebSocket socket){
 		_namelessClients.remove(socket);
@@ -267,6 +272,9 @@ class WsClients {
 	void markClient(String id, WebSocket socket){
 		_namedClients[id] = socket;
 		removeNamelessClient(socket);
+		if(verbose ?? false){
+			pretifyOutput('[ws] socket marked', color: Color.green);
+		}
 	}
 	void removeNamedClient(WebSocket socket){
 		String? id;
@@ -283,5 +291,9 @@ class WsClients {
 	void remove(WebSocket socket){
 		removeNamelessClient(socket);
 		removeNamedClient(socket);
+
+		if(verbose ?? false){
+			pretifyOutput('[ws] socket removed', color: Color.red);
+		}
 	}
 }
