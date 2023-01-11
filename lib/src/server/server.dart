@@ -249,8 +249,9 @@ abstract class Ws extends RequestHandler {
 }
 
 class WsClients {
+	String name;
 	bool? verbose;
-	WsClients({this.verbose=false});
+	WsClients({required this.name, this.verbose=false});
 	List<WebSocket> _namelessClients = [];
 	Map<String, WebSocket> _namedClients = {};
 
