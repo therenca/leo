@@ -155,19 +155,83 @@ To output info on screen with different colors
 ```dart
 
 leo.pretifyOutput('to print on screen'); // will print in green
-leo.pretifyOutput('to print on screen', color: 'red'); // white, red, magenta, yellow, cyan, blue, defaults to green
+leo.pretifyOutput('to print on screen', leo.Color.red);
+```
+*Isolate Spawning*
+- To start an isolate and have the callback send data back - one way 
+```dart
+var isolatateName = 'test';
+var callback = (List<dynamic> args){ // these args are passed to the callback by leo.initIsolate
+  // the first arg is the name of the isolate
+  // the second arg is the sendPort from the spawner
+  // the third argument is your callbackArgs - actual args for your callback
+  // ex: send data back to spawner by args[1].send(data), this will show up on onListenCallback
+  // ex: access your function's arguments by args.last
+  // ex: access name of isolate by args.first
+
+  print('running this isolate');
+  // run some code in this thread
+};
+
+var onListenCallback = (receivePort, data){
+  // data is from the callback
+  print(data);
+};
+
+leo.SpawnedIsolate spawned = await leo.initIsolate(
+  isolateName,
+  callback,
+  callbackArgs: [] // your actual callback arguments
+  onListenCallback: onListenCallback,
+  verbose: true
+);
+
+// the spawned instance has the Isolate, ReceivePort and sendPort instances
+// you can send back data to the spawned function 
 ```
 
-To start an isolate
+- To start an isolate and have the callback send data back and receive as well from main - bi-directional 
 ```dart
-var isolatateName = 'test'
-var callback = (){ print('running this isolate')  return 'testing'; };
-var onListenCallback = (data){
-  print(data);
-}
-var isolateInfo = await initIsolate(isolateName, callback, onListenCallback: onListenCallback, verbose: true);
+var isolatateName = 'test';
+var callback = (List<dynamic> args){ // these args are passed to the callback by leo.initIsolate
+  // the first arg is the name of the isolate
+  // the second arg is the sendPort from the spawner
+  // the third argument is your callbackArgs - actual args for your callback
+  // ex: send data back to spawner by args[1].send(data), this will show up on onListenCallback
+  // ex: access your function's arguments by args.last
+  // ex: access name of isolate by args.first
 
-// isolateInfo returns a map with the isolate instance, receiver and the sendPort
+  // to make this bidirectional
+  var port = ReceivePort();
+  port.listen((data){
+    // data from main
+  })
+  // send back the sendPort for you to be able to send the data from main
+  // you will get this sendPort instance from the spawnedIsolate instance
+  args[1].send(port.sendPort);
+
+  print('running this isolate');
+  // run some code in this thread
+};
+
+var onListenCallback = (receivePort, data){
+  // data is from the callback
+  print(data);
+};
+
+leo.SpawnedIsolate spawned = await leo.initIsolate(
+  isolateName,
+  callback,
+  callbackArgs: [] // your actual callback arguments
+  onListenCallback: onListenCallback,
+  verbose: true
+);
+
+// the spawned instance has the Isolate, ReceivePort and sendPort instances
+// you can send back data to the spawned function 
+
+// send data back to the callback
+spawned.sendPort.send('back to callback');
 ```
 
 To distribute work evenly across workers
@@ -219,7 +283,7 @@ class MyServer extends leo.Server {
   final int port = 8080;
 
   @override
-  final String color = 'cyan'; // white, red, magenta, yellow, cyan, blue, defaults to green
+  final leo.Color color = leo.Color.cyan;
 
   @override
   final String logFile = '/path/to/log';
@@ -324,5 +388,46 @@ class MyServer extends leo.Server {
   final Map<String, leo.RequestHandler> routes = {
     '/ws': WebsocketHandler(clients: testClients) // this WebSocket is defined below
   };
+}
+
+```
+`'/ws': WebsocketHandler(clients: testClients)`
+we are passing the `testClients` to the websocket handler so that sockets can be added to this url. The `WsClients` class is a socket manager that adds, marks and removes sockets on connection termination. Once you identify your sockets, you can mark them. Marked sockets can be accessed from `getNamedClients()` or `testClients.namedClients` and unidentified socketes can be accessed from `getNamelessClients()` or `testClients.namelessClients`
+
+
+to use these acquired websocket connections for this specific url, pass them to other handlers like so
+
+```dart
+var testClients = leo.WsClients();
+class MyServer extends leo.Server {
+ /// server setup
+ /// some code
+ /// 
+ @override
+  final Map<String, leo.RequestHandler> routes = {
+    '/test': TestHandler(clients: testClients), // get clients to send data back to 
+    '/ws': WebsocketHandler(clients: testClients) // pass obj to store clients
+  };
+}
+```
+
+where `TestHandler` is defined with ability to access the sockets
+```dart
+class TestHandler extends leo.RequestHandler {
+  leo.WsClients clients;
+  TestHandler({
+    required this.clients
+  })
+  @override
+  Future<Map<String, dynamic>> get([route, data]) async {
+    // some code
+    clients.namedClients[id].add('send data back to frontend');
+    clients.namelessClients.forEach((sock) => sock.add('send data back to frontend'))
+  }
+
+  @override
+  Future<Map<String, dynamic>> post([route, data]) async {
+    // some code
+  }
 }
 ```
