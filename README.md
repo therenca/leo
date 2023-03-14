@@ -438,37 +438,34 @@ define the middleware
 ```dart
 class NewMiddleware extends leo.Middleware {
 
-	@override
-	String name = 'Middleware Name';
+  @override
+  String name = 'Middleware Name';
 
-	@override
-	Future<bool> run() async {
+  @override
+  Future<bool> run() async {
     //you can access the request obj
     var request = route!.req;
-    
+
     //token eg to check if token is valid for this request handle
-    var bearerAuth = route!.req!.headers['Authorization']; r
+    var bearerAuth = route!.req!.headers['Authorization'];
 
     // whatever checks you want to make,
     // do them here before the request obj reaches the request handler 
 
     // if run returs false, the request handler will not execute
-		return false; // or true
-	}
+    return false; // or true
+  }
 }
 ```
 
 add middleware to the request handler like this:
 ```dart
 class Fetch extends leo.RequestHandler {
-
   // some code
-
-	@override
-	List<leo.Middleware>? middleware = [
-		NewMiddleware()
-	];
-
-	//some code
+  @override
+  List<leo.Middleware>? middleware = [
+    NewMiddleware()
+  ];
+  //some code
 }
 ```
