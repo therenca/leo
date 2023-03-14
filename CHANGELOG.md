@@ -33,3 +33,6 @@
 
 ### 1.0.4+8
 - updated leo.Client, timeout optional
+
+### 1.0.4+9
+- updated docs	
