@@ -469,3 +469,51 @@ class Fetch extends leo.RequestHandler {
   //some code
 }
 ```
+
+how to integrate with nginx.
+
+you can setup your server ip to localhost and redirect traffic from nginx to the local server instance, thereby letting nginx do all the load balancing and traffic handling
+
+`/etc/nginx/nginx.conf` would look like this
+```conf
+# /usr/local/nginx/sbin/nginx -g 'daemon off;'
+worker_processes  auto;
+events {
+  worker_connections  1024;
+}
+
+http {
+  sendfile off;
+  tcp_nopush on;
+  directio 512;
+  default_type application/octet-stream;
+
+  server {
+    listen 8080 ssl;
+    ssl_certificate /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+    server_name example.com;
+
+    location /test {
+      proxy_pass http://localhost:8081/test;
+    }		
+  }
+}
+```
+
+to add websockets in nginx that corresponds back to the server instance
+
+```conf
+  server {
+    # some config
+
+    location /ws {
+      proxy_pass http://localhost:8081/ws;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    }
+
+    #some config
+  }
+```
