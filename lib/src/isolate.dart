@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:isolate';
-
 import 'output.dart';
 
 Future<SpawnedIsolate> initIsolate(
@@ -17,19 +16,19 @@ Future<SpawnedIsolate> initIsolate(
 	var completer = Completer<SpawnedIsolate>();
 	var receivePort = ReceivePort();
 
-	isolate = await Isolate.spawn(callback, [isolateName, receivePort.sendPort, callbackArgs]);
+	isolate = await Isolate.spawn(callback, [name, receivePort.sendPort, callbackArgs]);
 	if(verbose){
 		pretifyOutput('$isolateName ----- started ---- ', color: Color.cyann);
 	}
 
-	receivePort.listen((data) async {
-
-
+	Stream stream = receivePort.asBroadcastStream();
+	stream.listen((data) async {
 		if(data is SendPort){
 			completer.complete(SpawnedIsolate(
-				isolate: isolate,
+				stream: stream,
 				sendPort: data,
-				receivePort: receivePort
+				isolate: isolate,
+				receivePort: receivePort,
 			));
 		} else if(data == 'done'){
 			receivePort.close();
@@ -50,17 +49,16 @@ Future<SpawnedIsolate> initIsolate(
 	return completer.future;
 }
 
-// please note
-// so that you complete the future return value from the initIsolate async function, you will have to send SendPort value from the child back to the parent at this location. So that "completer.complete(isolateParts)" completes and returns a value. Otherwise it will hang or return a future/null which breaks code without throwing an exception
-
 class SpawnedIsolate {
+	Stream stream;
 	Isolate isolate;
-	ReceivePort receivePort;
 	SendPort sendPort;
+	ReceivePort receivePort;
 
 	SpawnedIsolate({
+		required this.stream,
 		required this.isolate,
+		required this.sendPort,
 		required this.receivePort,
-		required this.sendPort
 	});
 }

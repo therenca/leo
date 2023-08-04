@@ -12,7 +12,6 @@ import 'http_multipart_form_data.dart';
 import 'package:mime/mime.dart' as mime;
 
 abstract class Server {
-
 	late int port;
 	String ip = 'localhost';
 
@@ -31,12 +30,13 @@ abstract class Server {
 	String? privateKey;
 
 	bool https = false;
+	bool shared = false;
+	late HttpServer server;
 
-	Future<void> start() async {
+	Future<HttpServer> start() async {
 		if(verbose){
-			await pretifyOutput('[$header] starting ...', color: color);
+			await pretifyOutput('[${DateTime.now().toIso8601String()}][$header] starting ...', color: color);
 		}
-		HttpServer server;
 
 		if(https){
 			assert(cert != null);
@@ -54,16 +54,15 @@ abstract class Server {
 			server = await HttpServer.bind(
 				ip,
 				port,
+				shared: shared
 			);
 		}
-
-		await for (HttpRequest request in server){
-			await _handleRequests(request);
-		}
+		server.listen((HttpRequest request) async => await _handleRequests(request));
+		return server;
 	}
 
-	Future<void> _handleRequests(HttpRequest request) async {
 
+	Future<void> _handleRequests(HttpRequest request) async {
 		Batch? batch;
 		var clientData;
 		bool isWebSocket = false;

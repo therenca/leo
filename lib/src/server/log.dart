@@ -17,13 +17,13 @@ Future<void> Log(String uri, String method, {String? header, HttpRequest? reques
 	}
 	var now = DateTime.now().toIso8601String();
 
-	await pretifyOutput('[$now][$ipAddress]$header[$method][$mimetype]', endLine: '', color: Color.yellow);
+	await pretifyOutput('[$now][$ipAddress][$header][$method][$mimetype]', endLine: '', color: Color.yellow);
 	await pretifyOutput('[$uri]', endLine: '', color: Color.cyann);
 	await pretifyOutput(' <== ', endLine: '', color: Color.yellow);
 	await pretifyOutput('$data');
 
 	if(logFile != null){
-		var toLog = '[$now][$ipAddress]$header[$method][$uri] <== $data';
+		var toLog = '[$now][$ipAddress][$header][$method][$uri] <== $data';
 		await log.log(toLog, logFile, time: false);
 	}
 }

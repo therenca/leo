@@ -2,7 +2,7 @@ import 'dart:async';
 import 'output.dart';
 
 Future<dynamic> tryCatch(dynamic callback, 
-	{List<dynamic>? args, bool verbose=false, dynamic onError}) async {
+	{List<dynamic>? args, bool verbose=false, dynamic onError, String? tag}) async {
 	Completer completer = Completer<dynamic>();
 
 	var results;
@@ -20,7 +20,7 @@ Future<dynamic> tryCatch(dynamic callback,
 		}
 	} catch(e){
 		if(verbose){
-			pretifyOutput('[TRY CATCH] ${e.toString()}', color: Color.red);
+			pretifyOutput('${tag != null ?[tag] : ''}[TRY CATCH] ${e.toString()}', color: Color.red);
 		}
 
 		if(onError != null){

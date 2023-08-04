@@ -97,7 +97,6 @@ Future<void> pretifyOutput(String info,
 
 	var end = endLine ?? '\n';
 	stdout.write('$toPretify$end');
-	// print('$toPretify$end');
 
 	if(path != null){
 		await log(info, path, clear: clear);

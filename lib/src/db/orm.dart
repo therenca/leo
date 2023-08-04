@@ -20,7 +20,7 @@ class ORM {
 	}
 
 	Future<dynamic> get(
-		String table, String column, {Map<String, dynamic>? values}) async {	
+		String table, String column, {Map<String, dynamic>? values, int? limit, int? offset}) async {	
 		values == null ? values = <String, dynamic>{} : values = values; 
 		String whereClause = DB.getWhereClause(values);
 
@@ -30,6 +30,9 @@ class ORM {
 		} else {
 			sql = 'SELECT $column FROM $table $whereClause';
 		}
+
+		sql = '$sql${limit != null ? ' LIMIT $limit' : ''}';
+		sql = '$sql${offset != null ? ' OFFSET $offset' : ''}';
 
 		if(verbose){
 			pretifyOutput('[SQL] $sql');
