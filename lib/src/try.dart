@@ -19,6 +19,7 @@ Future<dynamic> tryCatch(dynamic callback,
 			}
 		}
 	} catch(e){
+		results = null;
 		if(verbose){
 			pretifyOutput('${tag != null ?[tag] : ''}[TRY CATCH] ${e.toString()}', color: Color.red);
 		}

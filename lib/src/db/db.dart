@@ -159,3 +159,10 @@ class DB {
 		}
 	}
 }
+
+enum Joins {
+	inner,
+	left,
+	right,
+	full
+}

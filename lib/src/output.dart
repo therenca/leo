@@ -3,112 +3,112 @@ import 'dart:async';
 import 'package:colorize/colorize.dart';
 import 'log.dart';
 
-Future<void> pretifyOutput(String info,
-	{
-		Color color=Color.green, 
-		Color? bgColor,
-		String? path,
-		bool clear=false,
-		String? endLine,
-	}) async {
+Future<void> pretifyOutput(
+  String info, {
+  Color color = Color.green,
+  Color? bgColor,
+  String? path,
+  bool clear = false,
+  String? endLine,
+}) async {
+  Colorize toPretify = Colorize(info);
+  toPretify.green();
+  switch (color) {
+    case Color.white:
+      {
+        toPretify.white();
+        break;
+      }
 
-	Colorize toPretify = Colorize(info);
+    case Color.red:
+      {
+        toPretify.red();
+        break;
+      }
 
-	switch(color){
-		case Color.white: {
-			toPretify.white();
-			break;
-		}
+    case Color.yellow:
+      {
+        toPretify.yellow();
+        break;
+      }
 
-		case Color.red: {
-			toPretify.red();
-			break;
-		}
+    case Color.magenta:
+      {
+        toPretify.magenta();
+        break;
+      }
 
-		case Color.yellow: {
-			toPretify.yellow();
-			break;
-		}
+    case Color.cyann:
+      {
+        toPretify.cyan();
+        break;
+      }
 
-		case Color.magenta: {
-			toPretify.magenta();
-			break;
-		}
+    case Color.blue:
+      {
+        toPretify.blue();
+        break;
+      }
 
-		case Color.cyann: {
-			toPretify.cyan();
-			break;
-		}
+    case Color.green:
+      {
+        toPretify.green();
+        break;
+      }
+  }
 
-		case Color.blue: {
-			toPretify.blue();
-			break;
-		}
+  if (bgColor != null) {
+    switch (bgColor) {
+      case Color.white:
+        {
+          toPretify.bgWhite();
+          break;
+        }
 
-		case Color.green: {
-			toPretify.green();
-			break;
-		}
+      case Color.red:
+        {
+          toPretify.bgRed();
+          break;
+        }
 
-		default: {
-			toPretify.green();
-			break;
-		}
-	}
+      case Color.yellow:
+        {
+          toPretify.bgYellow();
+          break;
+        }
 
-	if(bgColor != null){
-		switch(bgColor){
-			case Color.white: {
-				toPretify.bgWhite();
-				break;
-			}
+      case Color.magenta:
+        {
+          toPretify.bgMagenta();
+          break;
+        }
 
-			case Color.red: {
-				toPretify.bgRed();
-				break;
-			}
+      case Color.cyann:
+        {
+          toPretify.bgCyan();
+          break;
+        }
 
-			case Color.yellow: {
-				toPretify.bgYellow();
-				break;
-			}
+      case Color.blue:
+        {
+          toPretify.bgBlue();
+          break;
+        }
 
-			case Color.magenta: {
-				toPretify.bgMagenta();
-				break;
-			}
+      case Color.green:
+        {
+          toPretify.bgGreen();
+          break;
+        }
+    }
+  }
 
-			case Color.cyann: {
-				toPretify.bgCyan();
-				break;
-			}
+  var end = endLine ?? '\n';
+  stdout.write('$toPretify$end');
 
-			case Color.blue: {
-				toPretify.bgBlue();
-				break;
-			}
-
-			case Color.green: {
-				toPretify.bgGreen();
-				break;
-			}
-		}
-	}
-
-	var end = endLine ?? '\n';
-	stdout.write('$toPretify$end');
-
-	if(path != null){
-		await log(info, path, clear: clear);
-	}
+  if (path != null) {
+    await log(info, path, clear: clear);
+  }
 }
 
-enum Color {
-	green,
-	white,
-	red,
-	yellow,
-	magenta,
-	cyann,
-	blue
-}
+enum Color { green, white, red, yellow, magenta, cyann, blue }

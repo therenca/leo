@@ -5,7 +5,7 @@ Future<void> log(String data, String? file, {
 	bool clear=false,
 	bool time=true
 }) async {
-	await createFile(file, clear: clear);
+	if(file != null) await createFile(file, clear: clear);
 
 	String output;
 	if(time){

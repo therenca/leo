@@ -84,7 +84,6 @@ class ORM {
 		var subSql = '$command COLUMN ';
 		var thresholdX = columns.length - 1;
 		for(var index=0; index<columns.length; index++){
-
 			var tempSql = subSql;
 			var column = columns[index];
 			var columnName = column['name'];
@@ -116,11 +115,14 @@ class ORM {
 					sql += tempSql; 
 					break;
 				}
-
 			}
 		}
-
 		return await _run(sql, <String, dynamic>{}, table, false) as bool;
+	}
+
+	Future<(bool, List<dynamic>?)> join(String sql, {Map<String, dynamic>? values}) async {
+		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values);
+		return (fromDB['isSuccessful'] as bool, fromDB['results'] as List<dynamic>);
 	}
 
 	Future<int> count(String table, {Map<String, dynamic>? values}) async {
@@ -131,27 +133,34 @@ class ORM {
 		} else {
 			sql = 'SELECT COUNT (*) FROM $table';
 		}
-
 		if(verbose){
 			pretifyOutput('[SQL] $sql');
 		}
-
 		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
 		var counted = DB.fromDB(fromDB, table: table, action: 'count');
-
 		return counted;		
 	}
 
 	Future<bool> delete(String table, Map<String, dynamic> values) async {
-
 		String whereClause = DB.getWhereClause(values);
 		var sql = 'DELETE FROM $table $whereClause';
 		return await _run(sql, values, table, false) as bool;
-
 	}
 
 	Future<bool> clear(String table) async {
 		var sql = 'TRUNCATE TABLE $table';
 		return await _run(sql, <String, dynamic>{}, table, false) as bool;
+	}
+}
+
+class Join {
+	String table;
+	String left;
+	String right;
+
+	Join(this.table, this.left, this.right);
+
+	String parse(String t) {
+		return 'ON $table.$left=$t.$right';
 	}
 }
