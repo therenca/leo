@@ -1,39 +1,24 @@
 import 'dart:async';
 import 'output.dart';
 
-Future<dynamic> tryCatch(dynamic callback, 
-	{List<dynamic>? args, bool verbose=false, dynamic onError, String? tag}) async {
-	Completer completer = Completer<dynamic>();
+Future<T?> tryCatch<T, T1>(Future<T> Function([T1?]) callback,
+    {bool verbose = false,
+    Future<void> Function()? onError,
+    String? tag,
+    T1? arg,
+    String? path}) async {
+  Completer<T> completer = Completer();
+  T? results;
+  try {
+    results = await callback.call(arg);
+  } catch (e) {
+    if (verbose) {
+      pretifyOutput('${tag != null ? [tag] : ''} ${e.toString()}',
+          color: Color.red, path: path);
+    }
 
-	var results;
-	try {
-		if(callback is Future){
-			results = await callback;
-		}
-
-		if(callback is Function){
-			if(args != null){
-				results = callback(args);
-			} else {
-				results = callback();
-			}
-		}
-	} catch(e){
-		results = null;
-		if(verbose){
-			pretifyOutput('${tag != null ?[tag] : ''}[TRY CATCH] ${e.toString()}', color: Color.red);
-		}
-
-		if(onError != null){
-			if(onError is Future){
-				await onError;
-			}
-
-			if(onError is Function){
-				onError();
-			}	
-		}
-	}
-	completer.complete(results);
-	return completer.future;
+    await onError?.call();
+  }
+  completer.complete(results);
+  return completer.future;
 }

@@ -137,12 +137,9 @@ abstract class Server {
           logFile: logFile);
     }
 
-    if (middleware != null) {
-      middleware!.route = route;
-      middleware!.data = clientData;
-      isGloblMiddlewareSuccessful = await middleware!.run();
-    }
-
+    middleware?.route = route;
+    middleware?.data = clientData;
+    isGloblMiddlewareSuccessful = await middleware?.run() ?? false;
     if (isGloblMiddlewareSuccessful) {
       switch (method) {
         case 'GET':

@@ -38,3 +38,5 @@
 - updated docs	
 ### 1.0.5+1
 - update fractionate and client impl
+### 1.0.5+4
+- update lib

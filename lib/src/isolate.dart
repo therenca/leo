@@ -3,18 +3,15 @@ import 'dart:isolate';
 
 import 'output.dart';
 
-Future<SpawnedIsolate> initIsolate(
-    String name, Function(List<Object?>) callback,
-    {Function? onListenCallback,
-    List<dynamic>? callbackArgs,
-    bool verbose = false}) async {
+Future<SpawnedIsolate> initIsolate<T>(
+    String name, void Function(List<Object?>) callback,
+    {Function? onListenCallback, T? args, bool verbose = false}) async {
   Isolate isolate;
   var receivePort = ReceivePort();
   var isolateName = '[isolate][$name]';
   var completer = Completer<SpawnedIsolate>();
 
-  isolate = await Isolate.spawn(
-      callback, [isolateName, receivePort.sendPort, callbackArgs]);
+  isolate = await Isolate.spawn(callback, [name, receivePort.sendPort, args]);
   if (verbose) {
     pretifyOutput('$isolateName ----- started ---- ', color: Color.cyann);
   }
@@ -29,10 +26,6 @@ Future<SpawnedIsolate> initIsolate(
         pretifyOutput('$isolateName ------ ended -----', color: Color.red);
       }
     } else {
-      if (verbose) {
-        pretifyOutput('$isolateName: $data');
-      }
-
       if (onListenCallback != null) {
         await onListenCallback(receivePort, data);
       }
@@ -41,9 +34,6 @@ Future<SpawnedIsolate> initIsolate(
 
   return completer.future;
 }
-
-// please note
-// so that you complete the future return value from the initIsolate async function, you will have to send SendPort value from the child back to the parent at this location. So that "completer.complete(isolateParts)" completes and returns a value. Otherwise it will hang or return a future/null which breaks code without throwing an exception
 
 class SpawnedIsolate {
   Isolate isolate;

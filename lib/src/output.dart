@@ -12,7 +12,6 @@ Future<void> pretifyOutput(
   String? endLine,
 }) async {
   Colorize toPretify = Colorize(info);
-  toPretify.green();
   switch (color) {
     case Color.white:
       {
@@ -107,7 +106,7 @@ Future<void> pretifyOutput(
   stdout.write('$toPretify$end');
 
   if (path != null) {
-    await log(info, path, clear: clear);
+    await log(info, path, clear: clear, time: true);
   }
 }
 

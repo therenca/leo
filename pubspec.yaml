@@ -1,10 +1,10 @@
 name: leo
 description: A set of general utilities for the server
-version: 1.0.5+3
+version: 1.0.5+5
 homepage: 'https://github.com/therenca/leo'
 
 environment:
-  sdk: '>=3.6.0 <= 3.7.0'
+  sdk: '>=3.6.0 <= 3.7.1'
 
 dependencies:
   colorize: ^3.0.0
