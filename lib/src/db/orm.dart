@@ -1,166 +1,161 @@
-import 'db.dart';
+import 'db.dart' as dbse;
 import '../output.dart';
 
 class ORM {
-	Map<String, dynamic> auth;
-	bool verbose;
+  late dbse.DB db;
+  ORM(this.db);
+  Future<dynamic> _run<T>(sql,
+      [Map<String, dynamic>? values, String? table, bool? isReturning]) async {
+    if (isReturning == true) {
+      sql = sql + ' RETURNING *';
+    }
+    var fromDB = await db.query(sql, values: values, identifier: table);
+    if (isReturning == true) {
+      return dbse.DB.fromDB<Map<String, dynamic>>(fromDB, table: table)?.first
+          as T;
+    } else {
+      return (fromDB != null) as T;
+    }
+  }
 
-	ORM(this.auth, {this.verbose=false});
+  Future<List<Map<String, dynamic>>?> query(String sql) async {
+    var fromDb = await db.query(sql);
+    return dbse.DB.fromDB<Map<String, dynamic>>(fromDb);
+  }
 
-	Future<dynamic> _run(sql, [Map<String, dynamic>?values, String? table, bool? isReturning]) async {
-		if(isReturning == true){
-			sql = sql + ' RETURNING *';
-		}
-		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values, identifier: table);
-		if(isReturning == true){
-			return fromDB['isSuccessful'] ? DB.fromDB(fromDB, table: table).first : null;
-		} else {
-			return fromDB['isSuccessful'];
-		}
-	}
+  Future<List<Map<String, dynamic>>?> get(String table, String column,
+      {Map<String, dynamic>? values, int? limit, int? offset}) async {
+    values == null ? values = <String, dynamic>{} : values = values;
+    String whereClause = dbse.DB.getWhereClause(values);
 
-	Future<dynamic> get(
-		String table, String column, {Map<String, dynamic>? values, int? limit, int? offset}) async {	
-		values == null ? values = <String, dynamic>{} : values = values; 
-		String whereClause = DB.getWhereClause(values);
+    var sql;
+    if (whereClause.isEmpty) {
+      sql = 'SELECT $column FROM $table';
+    } else {
+      sql = 'SELECT $column FROM $table $whereClause';
+    }
 
-		var sql;
-		if(whereClause.isEmpty){
-			sql = 'SELECT $column FROM $table';
-		} else {
-			sql = 'SELECT $column FROM $table $whereClause';
-		}
+    sql = '$sql${limit != null ? ' LIMIT $limit' : ''}';
+    sql = '$sql${offset != null ? ' OFFSET $offset' : ''}';
 
-		sql = '$sql${limit != null ? ' LIMIT $limit' : ''}';
-		sql = '$sql${offset != null ? ' OFFSET $offset' : ''}';
+    if (db.verbose) {
+      pretifyOutput('[SQL] $sql');
+    }
 
-		if(verbose){
-			pretifyOutput('[SQL] $sql');
-		}
-		
-		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
-		return DB.fromDB(fromDB, table: table);
-	}
+    var fromDB = await db.query(sql, values: values, identifier: table);
+    return dbse.DB.fromDB<Map<String, dynamic>>(fromDB, table: table);
+  }
 
-	Future<Map<String, dynamic>?> insert(String table, Map<String, dynamic> values) async {
-		String valuesF = '';
-		String columns = '';
+  Future<Map<String, dynamic>?> insert(
+      String table, Map<String, dynamic> values) async {
+    String valuesF = '';
+    String columns = '';
 
-		int tracker = 0;
-		values.forEach((key, value){
-			tracker++;
+    int tracker = 0;
+    values.forEach((key, value) {
+      tracker++;
 
-			if(values.length == 1){
-				columns += key;
-				valuesF += ' @$key';
-			} else {
-				if(tracker == values.length) {
-					columns += key;
-					valuesF += ' @$key';
-				} else {
-					columns += '$key, ';
-					valuesF += '@$key, ';
-				}
-			}
-		});
+      if (values.length == 1) {
+        columns += key;
+        valuesF += ' @$key';
+      } else {
+        if (tracker == values.length) {
+          columns += key;
+          valuesF += ' @$key';
+        } else {
+          columns += '$key, ';
+          valuesF += '@$key, ';
+        }
+      }
+    });
 
-		var sql = 'INSERT INTO $table ($columns) values($valuesF)';
-		return await _run(sql, values, table, true) as Map<String, dynamic>?;
-	}
+    var sql = 'INSERT INTO $table ($columns) values($valuesF)';
+    return await _run<Map<String, dynamic>?>(sql, values, table, true);
+  }
 
-	Future<Map<String, dynamic>?> update(
-		String table, Map<String, dynamic> change, Map<String, dynamic> values) async {
+  Future<Map<String, dynamic>?> update(String table,
+      Map<String, dynamic> change, Map<String, dynamic> values) async {
+    String whereClause = dbse.DB.getWhereClause(values);
+    String updateClause = dbse.DB.getSetClause(change);
+    var sql = 'UPDATE $table $updateClause $whereClause';
 
-		String whereClause = DB.getWhereClause(values);
-		String updateClause = DB.getSetClause(change);
-		var sql = 'UPDATE $table $updateClause $whereClause';
+    values.addAll(change);
+    return await _run<Map<String, dynamic>?>(sql, values, table, true);
+  }
 
-		values.addAll(change);
-		return await _run(sql, values, table, true) as Map<String, dynamic>?;
-	}
+  Future<bool> alter(String table, List<Map<String, dynamic>> columns,
+      {String? command}) async {
+    String sql = 'ALTER TABLE $table ';
+    var subSql = '$command COLUMN ';
+    var thresholdX = columns.length - 1;
+    for (var index = 0; index < columns.length; index++) {
+      var tempSql = subSql;
+      var column = columns[index];
+      var columnName = column['name'];
+      switch (command) {
+        case 'ADD':
+          {
+            var constraints = '';
+            String dataType = column['type'];
+            List<String>? constraintListing = column['constraints'];
+            if (constraintListing != null) {
+              constraints = dbse.DB.getConstraints(constraintListing);
+            }
+            if (constraints.isNotEmpty) {
+              tempSql += '$columnName $dataType ' + constraints;
+            } else {
+              tempSql += '$columnName $dataType';
+            }
+            if (index < thresholdX) {
+              tempSql += ',';
+            }
+            sql += tempSql;
+            break;
+          }
 
-	Future<bool> alter(String table, List<Map<String, dynamic>> columns, {String? command}) async {
-		String sql = 'ALTER TABLE $table ';
-		var subSql = '$command COLUMN ';
-		var thresholdX = columns.length - 1;
-		for(var index=0; index<columns.length; index++){
-			var tempSql = subSql;
-			var column = columns[index];
-			var columnName = column['name'];
-			switch(command){
-				case 'ADD': {
-					var constraints = '';
-					String dataType = column['type'];
-					List<String>? constraintListing = column['constraints'];
-					if(constraintListing != null){
-						constraints = DB.getConstraints(constraintListing);
-					}
-					if(constraints.isNotEmpty){
-						tempSql += '$columnName $dataType ' + constraints;
-					} else {
-						tempSql += '$columnName $dataType';
-					}
-					if(index < thresholdX){
-						tempSql += ',';
-					}
-					sql += tempSql;
-					break;
-				}
+        case 'DROP':
+          {
+            tempSql += ' $columnName';
+            if (index < thresholdX) {
+              tempSql += ',';
+            }
+            sql += tempSql;
+            break;
+          }
+      }
+    }
+    return await _run<bool>(sql, <String, dynamic>{}, table, false);
+  }
 
-				case 'DROP': {
-					tempSql += ' $columnName';
-					if(index < thresholdX){
-						tempSql += ','; 
-					}
-					sql += tempSql; 
-					break;
-				}
-			}
-		}
-		return await _run(sql, <String, dynamic>{}, table, false) as bool;
-	}
+  Future<List<Map<String, Map<String, dynamic>>>?> join(String sql,
+      {Map<String, dynamic>? values}) async {
+    return await db.query(sql, values: values);
+  }
 
-	Future<(bool, List<dynamic>?)> join(String sql, {Map<String, dynamic>? values}) async {
-		var fromDB = await DB(auth, verbose: verbose).query(sql, values: values);
-		return (fromDB['isSuccessful'] as bool, fromDB['results'] as List<dynamic>);
-	}
+  Future<int> count(String table, {Map<String, dynamic>? values}) async {
+    var sql;
+    if (values != null) {
+      String whereCaluse = dbse.DB.getWhereClause(values);
+      sql = 'SELECT COUNT(*) FROM $table $whereCaluse';
+    } else {
+      sql = 'SELECT COUNT (*) FROM $table';
+    }
+    if (db.verbose) {
+      pretifyOutput('[SQL] $sql');
+    }
+    var fromDB = await db.query(sql, values: values, identifier: table);
+    var counted = dbse.DB.fromDB<int>(fromDB, table: table, action: 'count');
+    return counted!.first;
+  }
 
-	Future<int> count(String table, {Map<String, dynamic>? values}) async {
-		var sql;
-		if(values != null){
-			String whereCaluse = DB.getWhereClause(values);
-			sql = 'SELECT COUNT(*) FROM $table $whereCaluse';
-		} else {
-			sql = 'SELECT COUNT (*) FROM $table';
-		}
-		if(verbose){
-			pretifyOutput('[SQL] $sql');
-		}
-		var fromDB = await DB(auth).query(sql, values: values, identifier: table);
-		var counted = DB.fromDB(fromDB, table: table, action: 'count');
-		return counted;		
-	}
+  Future<bool> delete(String table, Map<String, dynamic> values) async {
+    String whereClause = dbse.DB.getWhereClause(values);
+    var sql = 'DELETE FROM $table $whereClause';
+    return await _run<bool>(sql, values, table, false);
+  }
 
-	Future<bool> delete(String table, Map<String, dynamic> values) async {
-		String whereClause = DB.getWhereClause(values);
-		var sql = 'DELETE FROM $table $whereClause';
-		return await _run(sql, values, table, false) as bool;
-	}
-
-	Future<bool> clear(String table) async {
-		var sql = 'TRUNCATE TABLE $table';
-		return await _run(sql, <String, dynamic>{}, table, false) as bool;
-	}
-}
-
-class Join {
-	String table;
-	String left;
-	String right;
-
-	Join(this.table, this.left, this.right);
-
-	String parse(String t) {
-		return 'ON $table.$left=$t.$right';
-	}
+  Future<bool> clear(String table) async {
+    var sql = 'TRUNCATE TABLE $table';
+    return await _run<bool>(sql, <String, dynamic>{}, table, false);
+  }
 }

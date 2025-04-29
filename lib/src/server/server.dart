@@ -103,8 +103,11 @@ abstract class Server {
                   StringBuffer(), (b, s) => b..write(s));
               data = buffer.toString();
             } else {
+              // ignore: deprecated_export_use
               var buffer = await multipart.fold<BytesBuilder>(
-                  BytesBuilder(), (b, d) => b..add(d as List<int>));
+                  // ignore: deprecated_export_use
+                  BytesBuilder(),
+                  (b, d) => b..add(d as List<int>));
               data = buffer.takeBytes();
             }
             var filename = multipart.contentDisposition.parameters['filename'];
@@ -139,7 +142,7 @@ abstract class Server {
 
     middleware?.route = route;
     middleware?.data = clientData;
-    isGloblMiddlewareSuccessful = await middleware?.run() ?? false;
+    isGloblMiddlewareSuccessful = await middleware?.run() ?? true;
     if (isGloblMiddlewareSuccessful) {
       switch (method) {
         case 'GET':
@@ -158,10 +161,15 @@ abstract class Server {
                     verbose: verbose);
                 backToClient = await batch.run();
               } else {
-                var _handler = handler as Ws;
-                WebSocket ws = await WebSocketTransformer.upgrade(request);
-                ws.pingInterval = Duration(seconds: _handler.pingInterval);
-                await _handler.onOpen(ws);
+                callback([_]) async {
+                  var _handler = handler as Ws;
+                  WebSocket ws = await WebSocketTransformer.upgrade(request);
+                  ws.pingInterval = Duration(seconds: _handler.pingInterval);
+                  await _handler.onOpen(ws);
+                }
+
+                await tryCatch(callback,
+                    verbose: verbose, tag: 'upgrading to ws');
               }
             } else {
               if (verbose) {

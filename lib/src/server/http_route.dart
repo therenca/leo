@@ -25,6 +25,7 @@ class Route {
     return Route(chunks[0], chunks[1]);
   }
 
+  // ignore: non_nullable_equals_parameter
   bool operator ==(dynamic other) {
     if (!(other is Route)) {
       return false;

@@ -18,6 +18,7 @@ class Client {
 
   String? _now;
   String? _uri;
+  String? _responseContentType;
   int? _statusCode;
   final int ok = 200;
   String contentType;
@@ -48,34 +49,18 @@ class Client {
 
   String? get uri => _uri;
   int? get statusCode => _statusCode;
+  String? get responseContentType => _responseContentType;
 
   Uri httpUri(Method method) {
-    Uri? uri;
-    if (query != null && method == Method.GET) {
-      Map<String, String> _query =
-          query?.map<String, String>((k, v) => MapEntry(k, v as String)) ??
-              <String, String>{};
-      if (query!.isNotEmpty)
-        uri = Uri.http('$serverIp:$serverPort', path, _query);
-      if (query!.isEmpty) uri = Uri.http('$serverIp:$serverPort', path);
-    } else {
-      uri = Uri.http('$serverIp:$serverPort', path);
-    }
-
-    return uri!;
+    return method == Method.GET && (query?.isNotEmpty ?? false)
+        ? Uri.http('$serverIp:$serverPort', path, query)
+        : Uri.http('$serverIp:$serverPort', path);
   }
 
   Uri httpsUri(Method method) {
-    Uri? uri;
-    if (query != null && method == Method.GET) {
-      Map<String, String> _query = query!.cast<String, String>();
-      if (query!.isNotEmpty)
-        uri = Uri.https('$serverIp:$serverPort', path, _query);
-      if (query!.isEmpty) uri = Uri.https('$serverIp:$serverPort', path);
-    } else {
-      uri = Uri.https('$serverIp:$serverPort', path);
-    }
-    return uri!;
+    return method == Method.GET && (query?.isNotEmpty ?? false)
+        ? Uri.https('$serverIp:$serverPort', path, query)
+        : Uri.https('$serverIp:$serverPort', path);
   }
 
   Future<dynamic> getResponse(
@@ -184,6 +169,7 @@ class Client {
         }
 
         _statusCode = _res.statusCode;
+        _responseContentType = _res.headers['content-type'];
         if (expectedStatusCodes!.contains(_statusCode)) {
           // we are using contain because the full header could return
           // e.g 'application/json; charset=utf-8
