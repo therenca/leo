@@ -1,6 +1,7 @@
 import '../output.dart';
 import 'server.dart' as server;
 import 'http_route.dart' as http_route;
+import 'response.dart';
 
 class Batch {
 	String uri;
@@ -46,15 +47,15 @@ class Batch {
 		}
 	}
 
-	Future<Map<String, dynamic>?> run() async {
-		Map<String, dynamic>? backToClient;
+	Future<Response?> run() async {
+		Response? response;
 		var handler = routes[uri];
 		await _handleMiddleware();
 		if(_isMiddlewarePerRequestSuccessful ?? false){
 			// Use the new generic handle method that supports all HTTP methods
-			backToClient = await handler!.handle(route, data);
+			response = await handler!.handle(route, data);
 		}
 
-		return backToClient;
+		return response;
 	}
 }

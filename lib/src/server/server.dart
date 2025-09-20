@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'batch.dart';
 import 'match_uri.dart';
 import 'http_route.dart';
+import 'response.dart';
 import 'package:leo/leo.dart';
 import 'http_body_file_upload.dart';
 import 'http_multipart_form_data.dart';
@@ -62,7 +63,7 @@ abstract class Server {
     var uri = request.uri.path;
     var method = request.method;
     Route route = request.route();
-    Map<String, dynamic>? backToClient;
+    Response? response;
 
     var contentType = request.headers.contentType;
     var mimeType =
@@ -156,7 +157,7 @@ abstract class Server {
               method: method,
               data: clientData,
               verbose: verbose);
-          backToClient = await batch.run();
+              response = await batch.run();
         } else {
           // WebSocket handling remains the same
           callback([_]) async {
@@ -178,23 +179,27 @@ abstract class Server {
     }
 
     if (isWebSocket == false) {
-      if (backToClient != null) {
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode(backToClient));
+      if (response != null) {
+        // Use the Response object to write to the HTTP response
+        await response.writeTo(request.response);
       } else {
-        if (isGloblMiddlewareSuccessful == false ||
-            (batch?.isMiddlewarePerRequestSuccessful ?? false) == false) {
-          if (!isGloblMiddlewareSuccessful) {
-            if (verbose) {
-              await pretifyOutput(
-                  '[MAIN MIDDLEWARE | ${middleware!.name} | ${batch!.uri}] check failed',
-                  color: Color.red);
-            }
+        // Handle middleware failures or missing handlers
+        Response errorResponse;
+        if (isGloblMiddlewareSuccessful == false) {
+          if (verbose) {
+            await pretifyOutput(
+                '[MAIN MIDDLEWARE | ${middleware!.name} | ${route.uriPath}] check failed',
+                color: Color.red);
           }
-          request.response.statusCode = HttpStatus.forbidden;
+          errorResponse = Response.forbidden();
+        } else if ((batch?.isMiddlewarePerRequestSuccessful ?? false) == false) {
+          errorResponse = Response.forbidden();
+        } else {
+          // No handler found
+          errorResponse = Response.notFound();
         }
+        await errorResponse.writeTo(request.response);
       }
-      await request.response.close();
     }
   }
 
@@ -205,7 +210,7 @@ abstract class RequestHandler {
   List<Middleware>? middleware;
   
   // Main handler method that delegates to specific HTTP method handlers
-  Future<Map<String, dynamic>> handle(Route route, [dynamic data]) async {
+  Future<Response> handle(Route route, [dynamic data]) async {
     switch (route.httpMethod) {
       case HttpMethod.GET:
         return await get(route, data);
@@ -225,13 +230,13 @@ abstract class RequestHandler {
   }
   
   // HTTP method handlers
-  Future<Map<String, dynamic>> get(Route route, [dynamic data]);
-  Future<Map<String, dynamic>> post(Route route, [dynamic data]);
-  Future<Map<String, dynamic>> put(Route route, [dynamic data]) async => <String, dynamic>{};
-  Future<Map<String, dynamic>> delete(Route route, [dynamic data]) async => <String, dynamic>{};
-  Future<Map<String, dynamic>> patch(Route route, [dynamic data]) async => <String, dynamic>{};
-  Future<Map<String, dynamic>> options(Route route, [dynamic data]) async => <String, dynamic>{};
-  Future<Map<String, dynamic>> head(Route route, [dynamic data]) async => <String, dynamic>{};
+  Future<Response> get(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> post(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> put(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> delete(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> patch(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> options(Route route, [dynamic data]) async => Response.status(405);
+  Future<Response> head(Route route, [dynamic data]) async => Response.status(405);
 }
 
 abstract class Middleware {
@@ -245,19 +250,6 @@ abstract class Middleware {
 
 // we are extending RequestHandler to promote uniformity when structuring the server
 abstract class Ws extends RequestHandler {
-  @override
-  /// no use for get in WebSocket
-  Future<Map<String, dynamic>> get(Route route, [data]) async =>
-      <String, dynamic>{};
-  
-  @override
-  /// no use for post in WebSocket
-  Future<Map<String, dynamic>> post(Route route, [data]) async =>
-      <String, dynamic>{};
-
-  // All other HTTP methods are also not used in WebSocket context
-  // The parent class already provides default implementations
-
   ///in seconds
   int pingInterval = 10;
   Future<void> onOpen(WebSocket socket);

@@ -40,12 +40,4 @@ class MatchUri {
     }
   }
 
-  // Backward compatibility methods
-  static String? GET(
-          Map<String, server.RequestHandler> routes, http_route.Route route) =>
-      match(routes, route);
-
-  static String? POST(
-          Map<String, server.RequestHandler> routes, http_route.Route route) =>
-      match(routes, route);
 }
