@@ -261,55 +261,181 @@ abstract class Ws extends RequestHandler {
 class WsClients {
   String name;
   bool? verbose;
+  
   WsClients({required this.name, this.verbose = false});
-  List<WebSocket> _namelessClients = [];
-  Map<String, WebSocket> _namedClients = {};
+  
+  // Use Set for better performance on nameless clients
+  final Set<WebSocket> _namelessClients = <WebSocket>{};
+  final Map<String, WebSocket> _namedClients = <String, WebSocket>{};
+  // Reverse lookup map for O(1) named client removal
+  final Map<WebSocket, String> _socketToId = <WebSocket, String>{};
 
-  List<WebSocket> get namelessClients => _namelessClients;
-  Map<String, WebSocket> get namedClients => _namedClients;
+  // Getters for external access
+  Set<WebSocket> get namelessClients => Set.unmodifiable(_namelessClients);
+  Map<String, WebSocket> get namedClients => Map.unmodifiable(_namedClients);
+  
+  // Client counts
+  int get totalClients => _namelessClients.length + _namedClients.length;
+  int get namedClientCount => _namedClients.length;
+  int get namelessClientCount => _namelessClients.length;
+  
+  // Get all connected client IDs
+  List<String> get connectedIds => _namedClients.keys.toList();
 
+  /// Get a named client by ID
   WebSocket? getNamedClient(String id) => _namedClients[id];
-  WebSocket? getNamelessClient(socket) =>
-      _namelessClients.firstWhereOrNull((sock) => socket == sock);
+  
+  /// Check if a socket exists in nameless clients
+  bool hasNamelessClient(WebSocket socket) => _namelessClients.contains(socket);
+  
+  /// Get the ID of a named client by socket
+  String? getClientId(WebSocket socket) => _socketToId[socket];
 
+  /// Add a nameless client
   void addNamelessClient(WebSocket socket) {
-    _namelessClients.add(socket);
-    if (verbose ?? false) {
-      pretifyOutput('[ws] socket added', color: Color.magenta);
-    }
-  }
-
-  void removeNamelessClient(WebSocket socket) {
-    _namelessClients.remove(socket);
-  }
-
-  void markClient(String id, WebSocket socket) {
-    _namedClients[id] = socket;
-    removeNamelessClient(socket);
-    if (verbose ?? false) {
-      pretifyOutput('[ws] socket marked', color: Color.green);
-    }
-  }
-
-  void removeNamedClient(WebSocket socket) {
-    String? id;
-    _namedClients.forEach((_id, sock) {
-      if (socket == sock) {
-        id = _id;
-        return;
+    if (_namelessClients.add(socket)) {
+      if (verbose ?? false) {
+        pretifyOutput('[ws] socket added (total: $totalClients)', color: Color.magenta);
       }
-    });
+    }
+  }
+
+  /// Remove a nameless client
+  bool removeNamelessClient(WebSocket socket) {
+    final removed = _namelessClients.remove(socket);
+    if (removed && verbose == true) {
+      pretifyOutput('[ws] nameless socket removed', color: Color.yellow);
+    }
+    return removed;
+  }
+
+  /// Mark a client with an ID (move from nameless to named)
+  void markClient(String id, WebSocket socket) {
+    // Remove from nameless if present
+    _namelessClients.remove(socket);
+    
+    // Remove existing mapping if socket was already named
+    final oldId = _socketToId[socket];
+    if (oldId != null) {
+      _namedClients.remove(oldId);
+    }
+    
+    // Remove existing socket if ID was already used
+    final oldSocket = _namedClients[id];
+    if (oldSocket != null) {
+      _socketToId.remove(oldSocket);
+    }
+    
+    // Add new mappings
+    _namedClients[id] = socket;
+    _socketToId[socket] = id;
+    
+    if (verbose ?? false) {
+      pretifyOutput('[ws] socket marked as "$id" (total: $totalClients)', color: Color.green);
+    }
+  }
+
+  /// Remove a named client by socket (O(1) lookup)
+  bool removeNamedClient(WebSocket socket) {
+    final id = _socketToId.remove(socket);
     if (id != null) {
       _namedClients.remove(id);
+      if (verbose == true) {
+        pretifyOutput('[ws] named client "$id" removed', color: Color.yellow);
+      }
+      return true;
     }
+    return false;
+  }
+  
+  /// Remove a named client by ID
+  bool removeById(String id) {
+    final socket = _namedClients.remove(id);
+    if (socket != null) {
+      _socketToId.remove(socket);
+      if (verbose == true) {
+        pretifyOutput('[ws] client "$id" removed', color: Color.yellow);
+      }
+      return true;
+    }
+    return false;
   }
 
-  void remove(WebSocket socket) {
-    removeNamelessClient(socket);
-    removeNamedClient(socket);
-
+  /// Remove a client (named or nameless)
+  bool remove(WebSocket socket) {
+    final removedNamed = removeNamedClient(socket);
+    final removedNameless = removeNamelessClient(socket);
+    
+    if (removedNamed || removedNameless) {
+      if (verbose ?? false) {
+        pretifyOutput('[ws] socket removed (total: $totalClients)', color: Color.red);
+      }
+      return true;
+    }
+    return false;
+  }
+  
+  /// Broadcast message to all clients
+  void broadcast(String message, {String? excludeId}) {
+    // Broadcast to nameless clients
+    for (final socket in _namelessClients) {
+      _safeSend(socket, message);
+    }
+    
+    // Broadcast to named clients
+    for (final entry in _namedClients.entries) {
+      if (excludeId == null || entry.key != excludeId) {
+        _safeSend(entry.value, message);
+      }
+    }
+  }
+  
+  /// Broadcast message to named clients only
+  void broadcastToNamed(String message, {String? excludeId}) {
+    for (final entry in _namedClients.entries) {
+      if (excludeId == null || entry.key != excludeId) {
+        _safeSend(entry.value, message);
+      }
+    }
+  }
+  
+  /// Send message to specific named client
+  bool sendToClient(String id, String message) {
+    final socket = _namedClients[id];
+    if (socket != null) {
+      _safeSend(socket, message);
+      return true;
+    }
+    return false;
+  }
+  
+  /// Clear all clients
+  void clear() {
+    final count = totalClients;
+    _namelessClients.clear();
+    _namedClients.clear();
+    _socketToId.clear();
+    
     if (verbose ?? false) {
-      pretifyOutput('[ws] socket removed', color: Color.red);
+      pretifyOutput('[ws] cleared $count clients', color: Color.red);
+    }
+  }
+  
+  /// Safe send that handles closed sockets
+  void _safeSend(WebSocket socket, String message) {
+    try {
+      if (socket.readyState == WebSocket.open) {
+        socket.add(message);
+      } else {
+        // Socket is closed, remove it
+        remove(socket);
+      }
+    } catch (e) {
+      // Error sending, remove the socket
+      remove(socket);
+      if (verbose ?? false) {
+        pretifyOutput('[ws] removed dead socket: $e', color: Color.red);
+      }
     }
   }
 }
