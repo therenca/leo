@@ -1,7 +1,27 @@
 import 'dart:io';
 
+enum HttpMethod {
+  GET('GET'),
+  POST('POST'),
+  PUT('PUT'),
+  DELETE('DELETE'),
+  PATCH('PATCH'),
+  OPTIONS('OPTIONS'),
+  HEAD('HEAD');
+
+  const HttpMethod(this.value);
+  final String value;
+
+  static HttpMethod fromString(String method) {
+    return HttpMethod.values.firstWhere(
+      (m) => m.value == method.toUpperCase(),
+      orElse: () => throw ArgumentError('Unsupported HTTP method: $method'),
+    );
+  }
+}
+
 class Route {
-  final String method;
+  final HttpMethod httpMethod;
   final String uriPath;
   String? matchedWith;
   List<String>? _params;
@@ -9,7 +29,10 @@ class Route {
 
   HttpRequest? req;
 
-  Route(this.method, this.uriPath, [this.req]);
+  Route(this.httpMethod, this.uriPath, [this.req]);
+
+  // Backward compatibility getter
+  String get method => httpMethod.value;
 
   String? param(String param) {
     if (!_paramIndices!.containsKey(param)) {
@@ -19,10 +42,10 @@ class Route {
     return this._params![_paramIndices![param]!];
   }
 
-  String toString() => '$method $uriPath';
+  String toString() => '${httpMethod.value} $uriPath';
   Route fromString(String str) {
     final chunks = str.split(' ');
-    return Route(chunks[0], chunks[1]);
+    return Route(HttpMethod.fromString(chunks[0]), chunks[1]);
   }
 
   // ignore: non_nullable_equals_parameter
@@ -31,7 +54,7 @@ class Route {
       return false;
     }
 
-    if (other is GET && this.method != 'GET') return false;
+    if (other is GET && this.httpMethod != HttpMethod.GET) return false;
 
     final ownPathSegments =
         this.uriPath.split('/').where((c) => c.isNotEmpty).toList();
@@ -74,48 +97,48 @@ class Route {
   }
 
   @override
-  int get hashCode => this.method.hashCode + this.uriPath.hashCode;
+  int get hashCode => this.httpMethod.hashCode + this.uriPath.hashCode;
 }
 
 class GET extends Route {
   final String pattern;
-  GET(this.pattern) : super('GET', pattern);
+  GET(this.pattern) : super(HttpMethod.GET, pattern);
 }
 
 class POST extends Route {
   final String pattern;
-  POST(this.pattern) : super('POST', pattern);
+  POST(this.pattern) : super(HttpMethod.POST, pattern);
 }
 
 class PUT extends Route {
   final String pattern;
-  PUT(this.pattern) : super('PUT', pattern);
+  PUT(this.pattern) : super(HttpMethod.PUT, pattern);
 }
 
 class DELETE extends Route {
   final String pattern;
-  DELETE(this.pattern) : super('DELETE', pattern);
+  DELETE(this.pattern) : super(HttpMethod.DELETE, pattern);
 }
 
 class PATCH extends Route {
   final String pattern;
-  PATCH(this.pattern) : super('PATCH', pattern);
+  PATCH(this.pattern) : super(HttpMethod.PATCH, pattern);
 }
 
 class OPTIONS extends Route {
   final String pattern;
-  OPTIONS(this.pattern) : super('OPTIONS', pattern);
+  OPTIONS(this.pattern) : super(HttpMethod.OPTIONS, pattern);
 }
 
 class HEAD extends Route {
   final String pattern;
-  HEAD(this.pattern) : super('HEAD', pattern);
+  HEAD(this.pattern) : super(HttpMethod.HEAD, pattern);
 }
 
 extension HttpRoute on HttpRequest {
   Route route() {
     return Route(
-      this.method,
+      HttpMethod.fromString(this.method),
       this.uri.path,
       this,
     );

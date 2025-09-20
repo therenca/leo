@@ -51,17 +51,8 @@ class Batch {
 		var handler = routes[uri];
 		await _handleMiddleware();
 		if(_isMiddlewarePerRequestSuccessful ?? false){
-			switch(method){
-				case 'GET': {
-					backToClient = await handler!.get(route, data);
-					break;
-				}
-
-				case 'POST': {
-					backToClient = await handler!.post(route, data);
-					break;
-				}
-			}
+			// Use the new generic handle method that supports all HTTP methods
+			backToClient = await handler!.handle(route, data);
 		}
 
 		return backToClient;

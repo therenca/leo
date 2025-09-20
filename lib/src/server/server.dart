@@ -144,63 +144,36 @@ abstract class Server {
     middleware?.data = clientData;
     isGloblMiddlewareSuccessful = await middleware?.run() ?? true;
     if (isGloblMiddlewareSuccessful) {
-      switch (method) {
-        case 'GET':
-          {
-            var uri = MatchUri.GET(routes, route);
-            if (uri != null) {
-              var handler = routes[uri];
-              isWebSocket = _checkForWebSocket(handler);
-              if (isWebSocket == false) {
-                batch = Batch(
-                    uri: uri,
-                    route: route,
-                    routes: routes,
-                    method: method,
-                    data: clientData,
-                    verbose: verbose);
-                backToClient = await batch.run();
-              } else {
-                callback([_]) async {
-                  var _handler = handler as Ws;
-                  WebSocket ws = await WebSocketTransformer.upgrade(request);
-                  ws.pingInterval = Duration(seconds: _handler.pingInterval);
-                  await _handler.onOpen(ws);
-                }
-
-                await tryCatch(callback,
-                    verbose: verbose, tag: 'upgrading to ws');
-              }
-            } else {
-              if (verbose) {
-                pretifyOutput('[$header][GET] define request handler for $uri',
-                    color: Color.red);
-              }
-            }
-            break;
+      var matchedUri = MatchUri.match(routes, route);
+      if (matchedUri != null) {
+        var handler = routes[matchedUri];
+        isWebSocket = _checkForWebSocket(handler);
+        if (isWebSocket == false) {
+          batch = Batch(
+              uri: matchedUri,
+              route: route,
+              routes: routes,
+              method: method,
+              data: clientData,
+              verbose: verbose);
+          backToClient = await batch.run();
+        } else {
+          // WebSocket handling remains the same
+          callback([_]) async {
+            var _handler = handler as Ws;
+            WebSocket ws = await WebSocketTransformer.upgrade(request);
+            ws.pingInterval = Duration(seconds: _handler.pingInterval);
+            await _handler.onOpen(ws);
           }
 
-        case 'POST':
-          {
-            var uri = MatchUri.POST(routes, route);
-            if (uri != null) {
-              batch = Batch(
-                  uri: uri,
-                  route: route,
-                  routes: routes,
-                  method: method,
-                  data: clientData,
-                  verbose: verbose);
-              backToClient = await batch.run();
-            } else {
-              if (verbose) {
-                pretifyOutput('[$header][POST] define request handler for $uri',
-                    color: Color.red);
-              }
-            }
-
-            break;
-          }
+          await tryCatch(callback,
+              verbose: verbose, tag: 'upgrading to ws');
+        }
+      } else {
+        if (verbose) {
+          pretifyOutput('[$header][${route.httpMethod.value}] define request handler for ${route.uriPath}',
+              color: Color.red);
+        }
       }
     }
 
@@ -230,8 +203,35 @@ abstract class Server {
 
 abstract class RequestHandler {
   List<Middleware>? middleware;
+  
+  // Main handler method that delegates to specific HTTP method handlers
+  Future<Map<String, dynamic>> handle(Route route, [dynamic data]) async {
+    switch (route.httpMethod) {
+      case HttpMethod.GET:
+        return await get(route, data);
+      case HttpMethod.POST:
+        return await post(route, data);
+      case HttpMethod.PUT:
+        return await put(route, data);
+      case HttpMethod.DELETE:
+        return await delete(route, data);
+      case HttpMethod.PATCH:
+        return await patch(route, data);
+      case HttpMethod.OPTIONS:
+        return await options(route, data);
+      case HttpMethod.HEAD:
+        return await head(route, data);
+    }
+  }
+  
+  // HTTP method handlers
   Future<Map<String, dynamic>> get(Route route, [dynamic data]);
   Future<Map<String, dynamic>> post(Route route, [dynamic data]);
+  Future<Map<String, dynamic>> put(Route route, [dynamic data]) async => <String, dynamic>{};
+  Future<Map<String, dynamic>> delete(Route route, [dynamic data]) async => <String, dynamic>{};
+  Future<Map<String, dynamic>> patch(Route route, [dynamic data]) async => <String, dynamic>{};
+  Future<Map<String, dynamic>> options(Route route, [dynamic data]) async => <String, dynamic>{};
+  Future<Map<String, dynamic>> head(Route route, [dynamic data]) async => <String, dynamic>{};
 }
 
 abstract class Middleware {
@@ -246,15 +246,17 @@ abstract class Middleware {
 // we are extending RequestHandler to promote uniformity when structuring the server
 abstract class Ws extends RequestHandler {
   @override
-
-  /// no use for get
+  /// no use for get in WebSocket
   Future<Map<String, dynamic>> get(Route route, [data]) async =>
       <String, dynamic>{};
+  
   @override
-
-  /// no use for post
+  /// no use for post in WebSocket
   Future<Map<String, dynamic>> post(Route route, [data]) async =>
       <String, dynamic>{};
+
+  // All other HTTP methods are also not used in WebSocket context
+  // The parent class already provides default implementations
 
   ///in seconds
   int pingInterval = 10;
